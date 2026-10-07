@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chrischall/alexa-mcp",
+  "description": "Amazon Alexa for Claude — Echo devices, announcements, routines, smart home, lists",
+  "repository": {
+    "url": "https://github.com/chrischall/alexa-mcp",
+    "source": "github"
+  },
+  "version": "0.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@chrischall/alexa-mcp",
+      "version": "0.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "ALEXA_REGISTRATION",
+          "description": "Registration from `alexa-mcp login --print`; optional when the state file exists",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "ALEXA_STATE_DIR",
+          "description": "Where the refreshed registration is kept (default ~/.alexa-mcp)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

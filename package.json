@@ -1,0 +1,68 @@
+{
+  "name": "@chrischall/alexa-mcp",
+  "version": "0.0.0",
+  "mcpName": "io.github.chrischall/alexa-mcp",
+  "description": "Amazon Alexa MCP server for Claude \u2014 Echo devices, routines, smart home, lists and announcements \u2014 developed and maintained by AI",
+  "author": "Claude Code (AI) <https://www.anthropic.com/claude>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chrischall/alexa-mcp.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "ai",
+    "alexa",
+    "amazon",
+    "echo",
+    "smart-home",
+    "routines"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "bin": {
+    "alexa-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    ".claude-plugin",
+    "skills",
+    ".mcp.json",
+    "server.json",
+    "mint.yaml"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc && npm run bundle",
+    "bundle": "esbuild src/index.ts --bundle --alias:zod/v4=./node_modules/zod/v4/index.cjs --platform=node --format=esm --external:dotenv --banner:js=\"import { createRequire as __createRequire } from 'module'; import { fileURLToPath as __fileURLToPath } from 'url'; import { dirname as __pathDirname } from 'path'; const require = __createRequire(import.meta.url); const __filename = __fileURLToPath(import.meta.url); const __dirname = __pathDirname(__filename);\" --outfile=dist/bundle.js",
+    "dev": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "npm run typecheck && vitest run --coverage"
+  },
+  "dependencies": {
+    "@chrischall/mcp-utils": "^2.15.1",
+    "@modelcontextprotocol/server": "^2.3.0",
+    "alexa-cookie2": "^5.0.6",
+    "alexa-remote2": "^8.1.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.3.0",
+    "@types/node": "^26.0.0",
+    "@vitest/coverage-v8": "^5.0.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

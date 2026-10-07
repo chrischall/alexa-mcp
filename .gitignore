@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env*
+*.tsbuildinfo
+.DS_Store
+.claude/worktrees/
+
+# Alexa registration data (refresh token + session cookies). Never commit.
+registration.json
+reg.json
+*.har
+proxy-device.json

@@ -1,0 +1,24 @@
+src/
+tests/
+docs/
+node_modules/
+coverage/
+.env*
+.github/
+.claude/
+.claude-plugin/
+skills/
+server.json
+.mcp.json
+tsconfig.json
+vitest.config.ts
+release-please-config.json
+.release-please-manifest.json
+CHANGELOG.md
+*.tsbuildinfo
+mint.yaml
+
+# Alexa credentials — never pack a registration into the bundle
+registration.json
+reg.json
+proxy-device.json

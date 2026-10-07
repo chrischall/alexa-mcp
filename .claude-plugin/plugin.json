@@ -1,0 +1,22 @@
+{
+  "name": "alexa-mcp",
+  "displayName": "Amazon Alexa",
+  "version": "0.0.0",
+  "description": "MCP server for Amazon Alexa — Echo devices, announcements, routines, smart home, shopping/to-do lists and alarms",
+  "author": {
+    "name": "Chris Hall",
+    "email": "chris.c.hall@gmail.com"
+  },
+  "homepage": "https://github.com/chrischall/alexa-mcp",
+  "repository": "https://github.com/chrischall/alexa-mcp",
+  "license": "MIT",
+  "keywords": [
+    "alexa",
+    "amazon",
+    "echo",
+    "smart-home",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcp": "./.mcp.json"
+}

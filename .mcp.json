@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "alexa": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@chrischall/alexa-mcp"
+      ],
+      "env": {
+        "ALEXA_REGISTRATION": "${ALEXA_REGISTRATION}"
+      }
+    }
+  }
+}

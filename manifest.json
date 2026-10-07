@@ -1,0 +1,129 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/dxt/main/dist/mcpb-manifest.schema.json",
+  "manifest_version": "0.3",
+  "name": "alexa-mcp",
+  "display_name": "Amazon Alexa",
+  "version": "0.0.0",
+  "description": "Amazon Alexa for Claude — Echo devices, announcements, routines, smart home, lists and alarms via natural language",
+  "author": {
+    "name": "Chris Hall",
+    "email": "chris.c.hall@gmail.com",
+    "url": "https://github.com/chrischall"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chrischall/alexa-mcp"
+  },
+  "homepage": "https://github.com/chrischall/alexa-mcp",
+  "support": "https://github.com/chrischall/alexa-mcp/issues",
+  "license": "MIT",
+  "keywords": [
+    "alexa",
+    "amazon",
+    "echo",
+    "smart-home",
+    "routines"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/bundle.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/bundle.js"
+      ],
+      "env": {
+        "ALEXA_REGISTRATION": "${user_config.alexa_registration}"
+      }
+    }
+  },
+  "user_config": {
+    "alexa_registration": {
+      "type": "string",
+      "title": "Alexa registration (optional)",
+      "description": "Optional. Leave blank to use the state file written by `npx @chrischall/alexa-mcp login`. To set it here, run that command with --print and paste the line it prints.",
+      "required": false,
+      "sensitive": true
+    }
+  },
+  "tools": [
+    {
+      "name": "alexa_healthcheck",
+      "description": "Check that Amazon still accepts the Alexa session (device-list probe)"
+    },
+    {
+      "name": "alexa_session_status",
+      "description": "Report how the server is configured — registration source, Amazon site, cookie age (no network)"
+    },
+    {
+      "name": "alexa_list_devices",
+      "description": "List Echo speakers, Echo Shows, Fire TVs and other Alexa devices with online status"
+    },
+    {
+      "name": "alexa_get_now_playing",
+      "description": "What is playing on an Alexa device right now"
+    },
+    {
+      "name": "alexa_list_volumes",
+      "description": "Current volume and mute state of each Alexa device"
+    },
+    {
+      "name": "alexa_set_volume",
+      "description": "Set an Alexa device volume (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_playback",
+      "description": "Play, pause, next or previous on an Alexa device (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_speak",
+      "description": "Speak or announce text on Alexa devices (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_list_routines",
+      "description": "List Alexa routines with their triggers"
+    },
+    {
+      "name": "alexa_run_routine",
+      "description": "Run an Alexa routine now (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_list_smart_home",
+      "description": "List smart-home devices, groups and scenes Alexa controls"
+    },
+    {
+      "name": "alexa_control_smart_home",
+      "description": "Turn a smart-home device on/off, set brightness or activate a scene (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_list_lists",
+      "description": "List Alexa shopping and to-do lists"
+    },
+    {
+      "name": "alexa_get_list_items",
+      "description": "Read the items on an Alexa list"
+    },
+    {
+      "name": "alexa_add_list_item",
+      "description": "Add an item to an Alexa list (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_remove_list_item",
+      "description": "Delete an item from an Alexa list (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_list_alarms_reminders",
+      "description": "List alarms, timers and reminders on Alexa devices"
+    }
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=22.5.0"
+    }
+  }
+}

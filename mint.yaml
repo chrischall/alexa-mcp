@@ -1,0 +1,61 @@
+version: 1
+name: Amazon Alexa
+slug: alexa
+summary: >-
+  Echo devices, announcements, routines, smart-home control, shopping/to-do
+  lists and alarms through Amazon's Alexa web API. Each user pastes their own
+  registration from a one-time `alexa-mcp login`; every write is
+  confirmation-gated.
+identity:
+  perUserChild: true
+auth:
+  fields:
+    - name: ALEXA_REGISTRATION
+      label: Alexa registration
+      type: password
+      # A standing credential for the person (a refresh token, not a passcode),
+      # so remember it across reconnects rather than asking every time.
+      persist: user
+      help: >-
+        Run `npx @chrischall/alexa-mcp login --print` on a computer with a
+        browser, sign in to Amazon on the page it opens, and paste the one line
+        it prints. Removing the "alexa-mcp" device in your Amazon account
+        revokes it.
+env:
+  - name: ALEXA_AMAZON_PAGE
+    required: false
+    help: >-
+      Amazon site the account lives on (default amazon.com, or whatever the
+      registration recorded). Non-US sites also need their hosts added to egress.
+  - name: ALEXA_ACCEPT_LANGUAGE
+    required: false
+    help: Accept-Language sent to Amazon (default en-US).
+  - name: MCP_CONFIRM_MODE
+    required: false
+    help: >-
+      ask-user (default) / auto / refuse — whether the model must get your
+      approval in chat before using a write's confirmToken.
+  - name: MCP_CONFIRM_ELICITATION
+    required: false
+    help: Set to off to skip the confirmation prompt even on clients that declare elicitation support.
+state:
+  dataDir: true
+  reason: >-
+    Keeps $HOME/.alexa-mcp/registration.json (0600): the registration as last
+    refreshed. Amazon session cookies are re-minted from the refresh token every
+    few days; without persistence every cold start goes back to the pasted
+    seed and refreshes again, and once the seed's cookies age out every start
+    pays a refresh before the first tool call.
+egress:
+  allow:
+    # Alexa web API — the base host is resolved at runtime from
+    # alexa.amazon.com's endpoint document (websiteApiUrl), which answered
+    # na-api-alexa.amazon.com for a US account on 2026-10-07.
+    - alexa.amazon.com
+    - na-api-alexa.amazon.com
+    # Device list / communications metadata fetched during init.
+    - alexa-comms-mobile-service.amazon.com
+    # Cookie refresh from the refresh token (alexa-cookie2) and the shopping
+    # list item API (alexashoppinglists lives on www.<amazonPage>).
+    - api.amazon.com
+    - www.amazon.com
