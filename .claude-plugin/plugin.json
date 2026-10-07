@@ -1,7 +1,7 @@
 {
   "name": "alexa-mcp",
   "displayName": "Amazon Alexa",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "MCP server for Amazon Alexa — Echo devices, announcements, routines, smart home, shopping/to-do lists and alarms",
   "author": {
     "name": "Chris Hall",
