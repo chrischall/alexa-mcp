@@ -50,9 +50,10 @@ describe('packaging', () => {
     expect(read('release-please-config.json').packages['.']['package-name']).toBe(pkg.name);
   });
 
-  it('a brand-new package starts at 0.1.0, not 1.0.0', () => {
+  it('a brand-new package starts at 0.1.0, not 1.0.0, and stays 0.x on breaking changes', () => {
+    // Config only — never pin the manifest version here: release PRs bump it,
+    // and a pinned 0.0.0 failed the very first release PR's CI.
     const cfg = read('release-please-config.json').packages['.'];
-    expect(read('.release-please-manifest.json')['.']).toBe('0.0.0');
     expect(cfg['initial-version']).toBe('0.1.0');
     expect(cfg['bump-minor-pre-major']).toBe(true);
   });
