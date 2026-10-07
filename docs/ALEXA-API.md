@@ -9,7 +9,7 @@ Everything goes through `alexa-remote2` 8.1.1 / `alexa-cookie2` 5.0.6. Shapes be
   `tokenDate` is epoch **ms**, set on every login/refresh.
 - `refreshAlexaCookie({ formerRegistrationData })` mints new cookies from `refreshToken` with no browser and no MFA. Verified locally 2026-10-07: refresh then `getDevices` succeeded (15 devices).
 - Cookies last ~14 days; the library recommends refreshing after 5–13. This server refreshes after 4 days, before init.
-- Not yet verified: refresh from a datacenter IP (Fly). The spike is blocked on running it; until then hosting is untested.
+- Verified from a datacenter IP 2026-10-07: a Fly machine in `ewr` (egress 66.225.222.71) refreshed the cookie from the refresh token and then read all 15 devices. Amazon does not block the refresh from Fly, so hosting on mcp-host is viable.
 
 ## Hosts contacted
 
@@ -35,6 +35,9 @@ Discovery also returned `api.amazonalexa.com`, `na-bob-dispatch-prod-alexa.amazo
 - `getNotifications(false)` → `{ notifications: [{ type, status, reminderLabel, timerLabel, deviceSerialNumber, originalDate, originalTime, recurringPattern, … }] }`.
 - `getAllDeviceVolumes` → `{ volumes: [{ dsn, speakerVolume, speakerMuted, alertVolume, … }] }` — returned only ONE device on the test account; most Echo volumes are not reported here.
 
-## Not verified live yet
+## Writes verified live (2026-10-07)
 
-Writes (`speak`, `announcement`, `volume`, playback, routines, smart-home actions, list add/remove) are implemented against the library's documented call shapes and unit-tested, but have not been exercised against the live account.
+- **Volume** — `sendSequenceCommand(serial, 'volume', n)` moved a soundbar 20 → 21 → 20, confirmed by re-reading `getAllDeviceVolumes`. The player form `sendCommand(serial, 'volume', n)` was accepted with no error and changed NOTHING while idle — do not use it.
+- **List items** — `addListItem` then `deleteListItem` (with the item's `version`) on the to-do list, each confirmed by re-reading `getListItemsV2`.
+
+Not exercised live (audible or physical in the house): `speak`, `announcement`, playback, routines, smart-home actions. They use the library's documented call shapes and are unit-tested.
