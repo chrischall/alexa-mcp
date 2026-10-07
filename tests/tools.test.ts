@@ -263,7 +263,8 @@ describe('confirm-gated writes', () => {
     const { harness, writes } = await setup();
     await confirmed(harness, 'alexa_set_volume', { device: 'kitchen echo', volume: 20 });
     await confirmed(harness, 'alexa_playback', { device: 'G0002', command: 'pause' });
-    expect(writes('sendCommand').map((c) => c.args)).toEqual([['G0001', 'volume', 20], ['G0002', 'pause', null]]);
+    expect(writes('sendSequenceCommand').map((c) => c.args)).toEqual([['G0001', 'volume', 20]]);
+    expect(writes('sendCommand').map((c) => c.args)).toEqual([['G0002', 'pause', null]]);
     await harness.close();
   });
 

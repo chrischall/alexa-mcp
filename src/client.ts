@@ -244,8 +244,14 @@ export class AlexaClient {
     return this.call('sendSequenceCommand', serials, 'announcement', text);
   }
 
+  /**
+   * A volume SEQUENCE, not the player's `VolumeLevelCommand` (`sendCommand`):
+   * the player command is accepted with no error while nothing is playing and
+   * changes nothing. Verified live 2026-10-07 — sendCommand left a soundbar at
+   * 20; the sequence moved it to 21 and back.
+   */
   setVolume(serial: string, level: number): Promise<unknown> {
-    return this.call('sendCommand', serial, 'volume', level);
+    return this.call('sendSequenceCommand', serial, 'volume', level);
   }
 
   playback(serial: string, command: PlaybackCommand): Promise<unknown> {

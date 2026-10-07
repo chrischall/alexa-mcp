@@ -158,10 +158,10 @@ describe('commands', () => {
     expect(remote.calls.at(-1)).toEqual({ method: 'sendSequenceCommand', args: [['G0001', 'G0002'], 'announcement', 'dinner'] });
   });
 
-  it('setVolume and playback use sendCommand', async () => {
+  it('setVolume uses a volume SEQUENCE (works idle); playback uses the player command', async () => {
     const { client, remote } = make({ getDevices: () => ({ devices: DEVICES }) });
     await client.setVolume('G0001', 30);
-    expect(remote.calls.at(-1)).toEqual({ method: 'sendCommand', args: ['G0001', 'volume', 30] });
+    expect(remote.calls.at(-1)).toEqual({ method: 'sendSequenceCommand', args: ['G0001', 'volume', 30] });
     await client.playback('G0001', 'pause');
     expect(remote.calls.at(-1)).toEqual({ method: 'sendCommand', args: ['G0001', 'pause', null] });
   });
