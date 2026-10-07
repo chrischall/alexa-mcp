@@ -9,7 +9,7 @@ Everything goes through `alexa-remote2` 8.1.1 / `alexa-cookie2` 5.0.6. Shapes be
   `tokenDate` is epoch **ms**, set on every login/refresh.
 - `refreshAlexaCookie({ formerRegistrationData })` mints new cookies from `refreshToken` with no browser and no MFA. Verified locally 2026-10-07: refresh then `getDevices` succeeded (15 devices).
 - Cookies last ~14 days; the library recommends refreshing after 5–13. This server refreshes after 4 days, before init.
-- Not yet verified: refresh from a datacenter IP (Fly). The spike is blocked on running it; until then hosting is untested.
+- Verified from a datacenter IP 2026-10-07: a Fly machine in `ewr` (egress 66.225.222.71) refreshed the cookie from the refresh token and then read all 15 devices. Amazon does not block the refresh from Fly, so hosting on mcp-host is viable.
 
 ## Hosts contacted
 
