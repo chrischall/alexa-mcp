@@ -41,7 +41,7 @@ export function compactRoutine(r: Rec) {
 }
 
 /** The `phoenix/state` actions alexa_control_smart_home sends. */
-export const SMART_HOME_ACTIONS = ['turnOn', 'turnOff', 'setBrightness', 'sceneActivate', 'setColor', 'setColorTemperature', 'lock'] as const;
+export const SMART_HOME_ACTIONS = ['turnOn', 'turnOff', 'setBrightness', 'sceneActivate', 'setColor', 'setColorTemperature'] as const;
 export type SmartHomeAction = (typeof SMART_HOME_ACTIONS)[number];
 
 /**
@@ -56,7 +56,6 @@ const OFFERED_ACTIONS: [operation: string, action: string][] = [
   ['sceneActivate', 'sceneActivate'],
   ['setColor', 'setColor'],
   ['setColorTemperature', 'setColorTemperature'],
-  ['lockAction', 'lock'],
   // Performed by alexa_set_thermostat.
   ['setTargetTemperature', 'setTemperature'],
   ['setThermostatMode', 'setThermostatMode'],

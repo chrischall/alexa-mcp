@@ -68,7 +68,7 @@ These are audible, physical, or untested forms. They follow the library's docume
 
 ## Vacation mode is an emulation
 
-There is no vacation/away mode in this API (see the supportedModes above). `alexa_set_vacation_mode` therefore:
+The Alexa app DOES have a native Vacation Mode for these thermostats (Settings → Vacation Mode), but it is not in anything this library reaches: searched 2026-10-08 across `getSmarthomeDevicesV2` (incl. `features`, whose thermostat operations are only `setTargetSetpoint`/`adjustTargetSetpoint`/`setThermostatMode`), `getSmarthomeEntities`, the `phoenix/state` capability states and `getSmarthomeBehaviourActionDefinitions` — no `vacation`/`away`/`hold` anywhere. The app must use a separate thermostat-settings service; reaching it would need a capture of the app's own request. Until then `alexa_set_vacation_mode` emulates it (it does NOT flip the app's Vacation Mode toggle):
 
 1. reads each thermostat's mode and setpoints, and writes them to `<stateDir>/vacation.json` (0600) **before** sending anything;
 2. sets AUTO thermostats to the verified dual form, lower = heatTo (55 °F / 13 °C) and upper = coolTo (85 °F / 29 °C), clamped to `allowedTemperatureRange`; HEAT / COOL thermostats keep their mode and get the single-setpoint form (unverified); OFF thermostats are left OFF and not saved;
@@ -79,3 +79,10 @@ There is no vacation/away mode in this API (see the supportedModes above). `alex
 
 - `textCommand` (free-text "Alexa, …"): it can make purchases and unlock doors.
 - Unlock (`unlockAction`): reducing security stays manual.
+
+## Verified through the built tools (2026-10-08, Upstairs thermostat)
+
+- `alexa_set_thermostat` upper 74 → 75 → 74 (lower 63 untouched), each confirmed by `alexa_get_smart_home_state`.
+- `alexa_set_vacation_mode` on (AUTO 63–74° → 55–85°, confirmed by re-read), a second "on" refused, then off (back to 63–74°, confirmed).
+- `alexa_get_smart_home_state`, `alexa_get_do_not_disturb`, `alexa_get_equalizer`, `alexa_list_bluetooth` read the live account.
+- Not offered: lock/unlock (request shape unverified; unlock would reduce security).

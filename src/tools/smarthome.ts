@@ -174,8 +174,9 @@ export function registerSmartHomeTools(server: McpServer, client: AlexaClient): 
         'garage doors. Thermostats use alexa_set_thermostat. A device that is offline is reported as an error, not ' +
         'silently ignored.' +
         WRITE_SUFFIX,
-      // Locking has no inverse here (unlock is never offered), so the tool as a whole is destructive.
-      annotations: toolAnnotations({ readOnly: false, destructive: true }),
+      // Every action here has an inverse in this set (on/off, brightness, colour). Locks are deliberately not
+      // controllable: the request shape is unverified, and unlocking would reduce security.
+      annotations: toolAnnotations({ readOnly: false, destructive: false }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Device, group or scene name (or id) from alexa_list_smart_home.'),
         action: z.enum(SMART_HOME_ACTIONS).describe('What to do.'),
@@ -217,9 +218,6 @@ export function registerSmartHomeTools(server: McpServer, client: AlexaClient): 
           if (!colorTemperatureName) throw new McpToolError('setColorTemperature needs a colorTemperatureName, e.g. "warm_white".');
           parameters = { action, colorTemperatureName };
           detail = ` ${colorTemperatureName}`;
-          break;
-        case 'lock':
-          parameters = { action: 'lockAction', 'targetLockState.value': 'LOCKED' };
           break;
         default:
           parameters = { action };

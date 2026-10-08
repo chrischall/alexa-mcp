@@ -56,7 +56,7 @@ Under the hood this is the Alexa iOS app's OAuth sign-in with PKCE. The link car
 - **Free-text voice commands** ("Alexa, …", the library's `textCommand`). They can buy things and unlock doors, so no tool sends one.
 - **Unlocking** smart locks. `lock` is offered, `unlock` is not: reducing security stays a manual step.
 
-**Vacation mode is an emulation.** Alexa's thermostat API has no vacation, away or eco mode for Amazon Smart Thermostats (only HEAT / COOL / AUTO / OFF), so `alexa_set_vacation_mode` saves each thermostat's mode and setpoints to `~/.alexa-mcp/vacation.json` (mode 0600) before it changes anything, then sets heat-to 55° / cool-to 85° (or what you ask for). Thermostats that are OFF stay OFF. Turning it off restores the saved settings. Turning it on twice is refused, so the originals are never overwritten.
+**Vacation mode is an emulation.** The Alexa app's own thermostat Vacation Mode is not reachable through the API this server uses (its thermostat modes are only HEAT / COOL / AUTO / OFF), so this does not flip the app's toggle. Instead `alexa_set_vacation_mode` saves each thermostat's mode and setpoints to `~/.alexa-mcp/vacation.json` (mode 0600) before it changes anything, then sets heat-to 55° / cool-to 85° (or what you ask for). Thermostats that are OFF stay OFF. Turning it off restores the saved settings. Turning it on twice is refused, so the originals are never overwritten.
 
 ## Configuration
 

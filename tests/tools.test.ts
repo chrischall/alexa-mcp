@@ -507,11 +507,11 @@ describe('smart-home state', () => {
     await harness.close();
   });
 
-  it('alexa_list_smart_home offers thermostat and lock actions under the names this server takes (never unlock)', async () => {
+  it('alexa_list_smart_home offers thermostat actions under the names this server takes, and nothing for a lock', async () => {
     const { harness } = await setup();
     const rows = parseToolResult<{ name: string; actions: string[] }[]>(await harness.callTool('alexa_list_smart_home'));
     expect(rows.find((r) => r.name === 'Hallway Thermostat')?.actions).toEqual(['setTemperature', 'setThermostatMode']);
-    expect(rows.find((r) => r.name === 'Front Door')?.actions).toEqual(['lock']);
+    expect(rows.find((r) => r.name === 'Front Door')?.actions).toEqual([]);
     expect(rows.find((r) => r.name === 'Desk Lamp')?.actions).toEqual(['turnOn', 'turnOff', 'setColor', 'setColorTemperature']);
     await harness.close();
   });
@@ -582,7 +582,7 @@ describe('thermostat', () => {
   });
 });
 
-describe('light colour and lock', () => {
+describe('light colour, and no lock control', () => {
   it('setColor / setColorTemperature send the named colour', async () => {
     const { harness, writes } = await setup();
     await confirmed(harness, 'alexa_control_smart_home', { target: 'desk lamp', action: 'setColor', colorName: 'red' });
@@ -596,13 +596,13 @@ describe('light colour and lock', () => {
     await harness.close();
   });
 
-  it('lock sends lockAction LOCKED; there is no unlock', async () => {
+  it('locks cannot be controlled (lock/unlock are not offered: the request shape is unverified)', async () => {
     const { harness, writes } = await setup();
-    await confirmed(harness, 'alexa_control_smart_home', { target: 'front door', action: 'lock' });
-    expect(writes('executeSmarthomeDeviceAction')[0].args).toEqual([['e-lock'], { action: 'lockAction', 'targetLockState.value': 'LOCKED' }, 'APPLIANCE']);
-    const unlock = await harness.callTool('alexa_control_smart_home', { target: 'front door', action: 'unlock' });
-    expect(unlock.isError).toBe(true);
-    expect(writes('executeSmarthomeDeviceAction')).toHaveLength(1);
+    const result = await harness.callTool('alexa_control_smart_home', { target: 'front door', action: 'lock' });
+    expect(result.isError).toBe(true);
+    expect(writes('executeSmarthomeDeviceAction')).toHaveLength(0);
+    const { tools } = await harness.client.listTools();
+    expect(tools.find((t) => t.name === 'alexa_control_smart_home')?.annotations?.destructiveHint).toBe(false);
     await harness.close();
   });
 });
@@ -828,10 +828,10 @@ describe('descriptions point people to the right tool', () => {
     for (const n of ['alexa_get_smart_home_state', 'alexa_get_do_not_disturb', 'alexa_get_equalizer', 'alexa_list_bluetooth']) {
       expect(hint(n).readOnlyHint, n).toBe(true);
     }
-    for (const n of ['alexa_run_builtin', 'alexa_fire_tv', 'alexa_stop', 'alexa_cancel_alarm_reminder', 'alexa_control_smart_home']) {
+    for (const n of ['alexa_run_builtin', 'alexa_fire_tv', 'alexa_stop', 'alexa_cancel_alarm_reminder']) {
       expect(hint(n).destructiveHint, n).toBe(true);
     }
-    for (const n of ['alexa_set_vacation_mode', 'alexa_set_thermostat', 'alexa_set_do_not_disturb', 'alexa_set_equalizer', 'alexa_create_reminder', 'alexa_create_timer', 'alexa_update_list_item']) {
+    for (const n of ['alexa_set_vacation_mode', 'alexa_set_thermostat', 'alexa_set_do_not_disturb', 'alexa_set_equalizer', 'alexa_create_reminder', 'alexa_create_timer', 'alexa_update_list_item', 'alexa_control_smart_home']) {
       expect(hint(n).destructiveHint, n).toBe(false);
     }
     await harness.close();
