@@ -59,7 +59,36 @@ const OFFERED_ACTIONS: [operation: string, action: string][] = [
   // Performed by alexa_set_thermostat.
   ['setTargetTemperature', 'setTemperature'],
   ['setThermostatMode', 'setThermostatMode'],
+  // Performed by alexa_lock.
+  ['lockAction', 'lock'],
+  ['unlockAction', 'unlock'],
 ];
+
+/** The mode instance a garage door's open/close goes through. */
+export const GARAGE_INSTANCE = 'GarageDoor.Position';
+
+/**
+ * `setModeValue@<uuid>_<instance>` → `<instance>`: everything after the first
+ * `_` following the uuid (`5`, `Robot.MobilityState`, `Light.Effect`).
+ */
+export function modeInstance(operation: string): string | undefined {
+  if (!operation.startsWith('setModeValue@')) return undefined;
+  const rest = operation.slice('setModeValue@'.length);
+  const cut = rest.indexOf('_');
+  return cut >= 0 && cut < rest.length - 1 ? rest.slice(cut + 1) : undefined;
+}
+
+/** Every mode-controller instance an entity's supportedOperations declare, in order, de-duplicated. */
+export function modeInstances(e: Rec): string[] {
+  const ops = Array.isArray(e.supportedOperations) ? (e.supportedOperations as string[]) : [];
+  return [...new Set(ops.map(modeInstance).filter((i): i is string => i !== undefined))];
+}
+
+/** A garage door: its category says so, or it has a GarageDoor.Position mode. */
+export function isGarageDoor(e: Rec): boolean {
+  const provider = (e.providerData ?? {}) as Rec;
+  return provider.deviceType === 'GARAGE_DOOR' || modeInstances(e).includes(GARAGE_INSTANCE);
+}
 
 export function compactSmartHomeEntity(e: Rec) {
   const provider = (e.providerData ?? {}) as Rec;
@@ -70,7 +99,11 @@ export function compactSmartHomeEntity(e: Rec) {
     kind: str(provider.deviceType) ?? str(provider.categoryType) ?? null,
     entityType: provider.categoryType === 'GROUP' || provider.categoryType === 'VIRTUALGROUP' ? 'GROUP' : 'APPLIANCE',
     available: (e.availability ?? 'AVAILABLE') === 'AVAILABLE',
-    actions: OFFERED_ACTIONS.filter(([op]) => ops.includes(op)).map(([, action]) => action),
+    actions: [
+      ...OFFERED_ACTIONS.filter(([op]) => ops.includes(op)).map(([, action]) => action),
+      // Garage doors: alexa_garage_door. Other mode controllers (fan mode, vacuum, light effect): alexa_set_device_mode.
+      ...(isGarageDoor(e) ? ['open', 'close'] : modeInstances(e).length > 0 ? ['setMode'] : []),
+    ],
   };
 }
 

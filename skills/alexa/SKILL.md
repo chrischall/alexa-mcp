@@ -1,6 +1,6 @@
 ---
 name: alexa
-description: This skill should be used when the user asks about their Amazon Alexa / Echo devices or the smart home Alexa controls — thermostats (temperature, heat/cool setpoints, mode, vacation or away mode), lights (on/off, brightness, colour), plugs, locks, scenes, making Alexa speak or announce, running a routine, reminders, alarms and timers, Do Not Disturb, the equalizer, Bluetooth, Fire TV, or the Alexa shopping / to-do list. Triggers on phrases like "list my Alexa devices", "what's the thermostat set to", "set the heat to 70", "turn on vacation mode on the thermostats", "we're away next week", "turn off the porch light", "make the lamp warm white", "remind me at 6 to call mom", "set a 10 minute timer", "cancel my alarm", "turn on Do Not Disturb", "announce on the Echo", "run my good night routine", "add milk to the shopping list", "check off eggs".
+description: This skill should be used when the user asks about their Amazon Alexa / Echo devices or the smart home Alexa controls — thermostats (temperature, heat/cool setpoints, mode, vacation or away mode), lights (on/off, brightness, colour), plugs, door locks, garage doors, fan mode, robot vacuums, scenes, making Alexa speak or announce, running a routine, reminders, alarms and timers, Do Not Disturb, the equalizer, Bluetooth, Fire TV, or the Alexa shopping / to-do list. Triggers on phrases like "list my Alexa devices", "what's the thermostat set to", "set the heat to 70", "turn on vacation mode on the thermostats", "we're away next week", "turn off the porch light", "make the lamp warm white", "lock the front door", "open the garage", "set the fan to circulate", "remind me at 6 to call mom", "set a 10 minute timer", "cancel my alarm", "turn on Do Not Disturb", "announce on the Echo", "run my good night routine", "add milk to the shopping list", "check off eggs".
 ---
 
 # Amazon Alexa (alexa-mcp)
@@ -18,7 +18,10 @@ Tools are prefixed `alexa_`. Resolve names first, then act.
 - **What is it doing now?** `alexa_get_smart_home_state` (by name, or `kind: THERMOSTAT` for every thermostat). It returns temperature, mode, setpoints, humidity, whether heating/cooling runs, light power/brightness/colour, lock state, sensors and reachability. An unreachable device is reported on its row.
 - **Thermostat**: `alexa_set_thermostat`. In AUTO mode pass `lower` (heat to) and/or `upper` (cool to); the one you leave out is kept. In HEAT or COOL mode pass `temperature`. `mode` switches HEAT / COOL / AUTO / OFF. It refuses values outside the thermostat's allowed range.
 - **Vacation / away mode**: `alexa_set_vacation_mode`. This emulates vacation mode (it does not flip the Alexa app's own Vacation Mode toggle, which this API cannot reach): `enabled: true` saves every thermostat's settings and sets heat-to 55° / cool-to 85° (override with `heatTo` / `coolTo`). Thermostats that are OFF stay OFF. `enabled: false` restores the saved settings. It refuses to turn on twice; turn it off first.
-- **Lights, plugs, scenes, locks**: `alexa_control_smart_home`: `turnOn`, `turnOff`, `setBrightness`, `setColor` (`colorName`, e.g. "red"), `setColorTemperature` (`colorTemperatureName`, e.g. "warm_white"), `sceneActivate`, `lock`. There is **no unlock**. Tell the user to unlock with the Alexa app.
+- **Lights, plugs, scenes**: `alexa_control_smart_home`: `turnOn`, `turnOff`, `setBrightness`, `setColor` (`colorName`, e.g. "red"), `setColorTemperature` (`colorTemperatureName`, e.g. "warm_white"), `sceneActivate`.
+- **Fan mode, vacuum mode, light effects and other device modes**: `alexa_list_device_modes` shows each mode setting, its current value and its options; `alexa_set_device_mode` changes one (e.g. `setting: "Fan Mode", mode: "Circulate"`).
+- **Door locks**: `alexa_lock` (`lock` / `unlock`). Unlocking reduces security, so confirm explicitly. Amazon may refuse an unlock and require a voice PIN or the Alexa app; pass on its error.
+- **Garage doors**: `alexa_garage_door` (`open` / `close`). Opening reduces security, so confirm explicitly.
 
 ## Speakers
 
@@ -45,6 +48,7 @@ Tools are prefixed `alexa_`. Resolve names first, then act.
 Every tool that changes something returns a preview and a `confirmToken` on the first call. Show the user the preview, get their go-ahead, then repeat the call with the same arguments plus `confirmToken`. Changing any argument invalidates the token.
 
 - `alexa_speak`, `alexa_run_builtin`, `alexa_fire_tv` and `alexa_stop` act in the room and can't be undone. Confirm the device.
+- `alexa_lock` unlock and `alexa_garage_door` open reduce the home's security. Say so in the preview and get an explicit yes.
 - `alexa_run_routine` does whatever the routine was built to do. Say what it does if you know.
 - There is no tool for free-text "Alexa, …" commands, deliberately: they can buy things and unlock doors.
 

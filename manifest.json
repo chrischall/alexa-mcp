@@ -97,11 +97,11 @@
     },
     {
       "name": "alexa_list_smart_home",
-      "description": "List thermostats, lights, plugs, locks and scenes Alexa controls"
+      "description": "List thermostats, lights, plugs, locks, garage doors and scenes Alexa controls"
     },
     {
       "name": "alexa_control_smart_home",
-      "description": "Turn a smart-home device on/off, set brightness or colour, activate a scene, or lock a lock (asks you to confirm first)"
+      "description": "Turn a smart-home device on/off, set brightness or colour, or activate a scene (asks you to confirm first)"
     },
     {
       "name": "alexa_list_lists",
@@ -182,6 +182,22 @@
     {
       "name": "alexa_update_list_item",
       "description": "Check off or un-check an Alexa list item (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_list_device_modes",
+      "description": "List a device’s mode settings (fan mode, vacuum mode) and their values"
+    },
+    {
+      "name": "alexa_set_device_mode",
+      "description": "Change a device mode such as thermostat fan mode (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_garage_door",
+      "description": "Open or close a garage door (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_lock",
+      "description": "Lock or unlock a smart lock (asks you to confirm first)"
     }
   ],
   "compatibility": {

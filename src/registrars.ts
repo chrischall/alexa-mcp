@@ -10,6 +10,7 @@ import { registerDeviceTools } from './tools/devices.js';
 import { registerHealthcheckTools } from './tools/healthcheck.js';
 import { registerListTools } from './tools/lists.js';
 import { registerLoginTools } from './tools/login.js';
+import { registerModeTools } from './tools/modes.js';
 import { registerNotificationTools } from './tools/notifications.js';
 import { registerRoutineTools } from './tools/routines.js';
 import { registerSessionTools } from './tools/session.js';
@@ -29,6 +30,7 @@ export const TOOL_REGISTRARS: ToolRegistrar<AlexaClient>[] = [
   registerRoutineTools,
   registerSmartHomeTools,
   registerVacationTools,
+  registerModeTools,
   registerListTools,
   registerNotificationTools,
 ];

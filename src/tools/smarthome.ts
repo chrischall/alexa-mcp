@@ -145,10 +145,11 @@ export function registerSmartHomeTools(server: McpServer, client: AlexaClient): 
     {
       description:
         'List the smart-home devices, groups and scenes Alexa controls — thermostats, lights, plugs, switches, locks, ' +
-        'sensors, scenes — with the actions this server can perform on each (setTemperature / setThermostatMode via ' +
-        'alexa_set_thermostat; the rest via alexa_control_smart_home). These are NOT in alexa_list_devices, which ' +
-        'only lists Echo speakers, Echo Shows and Fire TVs. Optionally filter by kind (e.g. THERMOSTAT, LIGHT, ' +
-        'SMARTPLUG, SCENE_TRIGGER).',
+        'garage doors, robot vacuums, sensors, scenes — with the actions this server can perform on each: ' +
+        'setTemperature / setThermostatMode via alexa_set_thermostat, lock / unlock via alexa_lock, open / close via ' +
+        'alexa_garage_door, setMode (fan mode, vacuum mode, light effect) via alexa_set_device_mode, the rest via ' +
+        'alexa_control_smart_home. These are NOT in alexa_list_devices, which only lists Echo speakers, Echo Shows ' +
+        'and Fire TVs. Optionally filter by kind (e.g. THERMOSTAT, LIGHT, SMARTPLUG, SMARTLOCK, GARAGE_DOOR).',
       annotations: toolAnnotations({ readOnly: true }),
       inputSchema: z.object({
         kind: z.string().optional().describe('Only entities of this kind, e.g. LIGHT, THERMOSTAT, SCENE_TRIGGER (case-insensitive).'),
@@ -170,12 +171,12 @@ export function registerSmartHomeTools(server: McpServer, client: AlexaClient): 
       description:
         'Control an Alexa smart-home device, group or scene: turn lights and plugs on or off, set brightness ' +
         '(0–100), set a light colour (colorName, e.g. "red") or white temperature (colorTemperatureName, e.g. ' +
-        '"warm_white"), activate a scene, or lock a smart lock. Unlocking is deliberately not offered, nor are ' +
-        'garage doors. Thermostats use alexa_set_thermostat. A device that is offline is reported as an error, not ' +
-        'silently ignored.' +
+        '"warm_white"), or activate a scene. Thermostats use alexa_set_thermostat; other device modes (fan mode, ' +
+        'vacuum) alexa_set_device_mode; doors have their own tools. A device that is offline is reported as an ' +
+        'error, not silently ignored.' +
         WRITE_SUFFIX,
-      // Every action here has an inverse in this set (on/off, brightness, colour). Locks are deliberately not
-      // controllable: the request shape is unverified, and unlocking would reduce security.
+      // Every action here has an inverse in this set (on/off, brightness, colour). Security-reducing actions
+      // (unlock, open a garage door) live on their own destructive tools, alexa_lock and alexa_garage_door.
       annotations: toolAnnotations({ readOnly: false, destructive: false }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Device, group or scene name (or id) from alexa_list_smart_home.'),

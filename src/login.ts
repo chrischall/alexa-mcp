@@ -26,6 +26,11 @@ export function parseLoginArgs(argv: string[]): LoginOptions {
     const arg = argv[i];
     if (arg === '--print') opts.print = true;
     else if (arg === '--amazon-page') opts.amazonPage = String(argv[++i]);
+    else if (arg === '--port') {
+      // Retired in 0.2.0 (the sign-in moved to the user's own browser); accepted so old scripts keep working.
+      i++;
+      console.error('[alexa-mcp] --port is ignored: sign-in now happens in your own browser and needs no local port.');
+    }
     else throw new Error(`Unknown option ${arg}. Usage: alexa-mcp login [--amazon-page amazon.com] [--print]`);
   }
   if (!/^amazon\.[a-z.]+$/.test(opts.amazonPage)) throw new Error('--amazon-page must look like amazon.com or amazon.co.uk.');

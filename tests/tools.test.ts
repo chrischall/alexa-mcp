@@ -17,16 +17,29 @@ const ROUTINES = [
 const ENTITIES = [
   { id: 'e-porch', displayName: 'Porch Light', supportedOperations: ['turnOn', 'turnOff', 'setBrightness'], providerData: { categoryType: 'APPLIANCE', deviceType: 'LIGHT' }, availability: 'AVAILABLE' },
   { id: 'e-movie', displayName: 'Movie Time', supportedOperations: ['sceneActivate'], providerData: { categoryType: 'SCENE', deviceType: 'SCENE_TRIGGER' }, availability: 'AVAILABLE' },
-  { id: 'e-thermo', displayName: 'Hallway Thermostat', supportedOperations: ['setTargetTemperature', 'setThermostatMode'], providerData: { categoryType: 'APPLIANCE', deviceType: 'THERMOSTAT' }, availability: 'AVAILABLE' },
+  { id: 'e-thermo', displayName: 'Hallway Thermostat', supportedOperations: ['setTargetTemperature', 'setThermostatMode', 'setModeValue@0f3c9a2e-1b4d-4c6e-9a8b-7d5e3f1a2b4c_5'], providerData: { categoryType: 'APPLIANCE', deviceType: 'THERMOSTAT' }, availability: 'AVAILABLE' },
   { id: 'e-desk', displayName: 'Desk Lamp', supportedOperations: ['turnOn', 'turnOff', 'setColor', 'setColorTemperature'], providerData: { categoryType: 'APPLIANCE', deviceType: 'LIGHT' }, availability: 'AVAILABLE' },
   { id: 'e-lock', displayName: 'Front Door', supportedOperations: ['lockAction', 'unlockAction'], providerData: { categoryType: 'APPLIANCE', deviceType: 'SMARTLOCK' }, availability: 'AVAILABLE' },
+  { id: 'e-garage', displayName: 'Garage', supportedOperations: ['setModeValue@9a8b7c6d-5e4f-3a2b-1c0d-e9f8a7b6c5d4_GarageDoor.Position'], providerData: { categoryType: 'APPLIANCE', deviceType: 'GARAGE_DOOR' }, availability: 'AVAILABLE' },
+  { id: 'e-roomba', displayName: 'Roomba', supportedOperations: ['turnOn', 'turnOff', 'setModeValue@11112222-3333-4444-5555-666677778888_Robot.MobilityState'], providerData: { categoryType: 'APPLIANCE', deviceType: 'VACUUM_CLEANER' }, availability: 'AVAILABLE' },
 ];
+const names = (...texts: string[]) => ({ friendlyNames: texts.map((text) => ({ '@type': 'text', value: { text, locale: 'en-US' } })) });
+const modeCap = (instance: string, name: string, modes: [string, string][]) => ({
+  interfaceName: 'Alexa.ModeController',
+  instance,
+  resources: names(name),
+  configuration: { supportedModes: modes.map(([value, label]) => ({ value, modeResources: names(label) })) },
+});
+const FAN_CAP = modeCap('5', 'Fan Mode', [['1', 'On'], ['2', 'Auto'], ['3', 'Circulate']]);
+const GARAGE_CAP = modeCap('GarageDoor.Position', 'Position', [['Position.Up', 'Open'], ['Position.Down', 'Closed']]);
 /** getSmarthomeDevicesV2 — maps the entity id the control call uses to the applianceId the state query needs. */
 const ENDPOINTS = [
   { legacyAppliance: { applianceId: 'a-porch', entityId: 'e-porch', friendlyName: 'Porch Light' }, displayCategories: { primary: { value: 'LIGHT' } } },
-  { legacyAppliance: { applianceId: 'a-thermo', entityId: 'e-thermo', friendlyName: 'Hallway Thermostat' }, displayCategories: { primary: { value: 'THERMOSTAT' } } },
+  { legacyAppliance: { applianceId: 'a-thermo', entityId: 'e-thermo', friendlyName: 'Hallway Thermostat', capabilities: [FAN_CAP] }, displayCategories: { primary: { value: 'THERMOSTAT' } } },
   { legacyAppliance: { applianceId: 'a-desk', entityId: 'e-desk', friendlyName: 'Desk Lamp' }, displayCategories: { primary: { value: 'LIGHT' } } },
   { legacyAppliance: { applianceId: 'a-lock', entityId: 'e-lock', friendlyName: 'Front Door' }, displayCategories: { primary: { value: 'SMARTLOCK' } } },
+  { legacyAppliance: { applianceId: 'a-garage', entityId: 'e-garage', friendlyName: 'Garage', capabilities: [GARAGE_CAP] }, displayCategories: { primary: { value: 'GARAGE_DOOR' } } },
+  { legacyAppliance: { applianceId: 'a-roomba', entityId: 'e-roomba', friendlyName: 'Roomba', capabilities: [] }, displayCategories: { primary: { value: 'VACUUM_CLEANER' } } },
 ];
 const F = (value: number) => ({ value, scale: 'FAHRENHEIT' });
 const cap = (namespace: string, name: string, value: unknown, instance?: string) => ({ namespace, name, value, ...(instance ? { instance } : {}) });
@@ -54,6 +67,7 @@ const AUTO_STATES = [
   THERMO_RANGE,
   cap('Alexa.ThermostatController.Configuration', 'temperatureScale', 'FAHRENHEIT'),
   cap('Alexa.EndpointHealth', 'connectivity', { value: 'OK' }),
+  cap('Alexa.ModeController', 'mode', '1', '5'),
 ];
 const HEAT_STATES = [
   cap('Alexa.TemperatureSensor', 'temperature', F(66)),
@@ -64,7 +78,13 @@ const HEAT_STATES = [
 ];
 function stateHandler(thermo: unknown[] = AUTO_STATES) {
   return (ids: unknown) => {
-    const all: Record<string, unknown[]> = { 'a-porch': PORCH_STATES, 'a-thermo': thermo, 'a-desk': [] };
+    const all: Record<string, unknown[]> = {
+      'a-porch': PORCH_STATES,
+      'a-thermo': thermo,
+      'a-desk': [],
+      'a-garage': [cap('Alexa.ModeController', 'mode', 'Position.Down', 'GarageDoor.Position')],
+      'a-roomba': [JSON.stringify(cap('Alexa.ModeController', 'mode', 'Docked', 'Robot.MobilityState'))],
+    };
     const wanted = ids as string[];
     return {
       deviceStates: wanted.filter((id) => all[id]).map((id) => ({ entity: { entityId: id, entityType: 'APPLIANCE' }, capabilityStates: all[id], error: null })),
@@ -206,6 +226,10 @@ const EXPECTED_TOOLS = [
   'alexa_stop',
   'alexa_update_list_item',
   'alexa_set_vacation_mode',
+  'alexa_list_device_modes',
+  'alexa_set_device_mode',
+  'alexa_garage_door',
+  'alexa_lock',
 ];
 
 const SIGN_IN_TOOLS = ['alexa_begin_login', 'alexa_finish_login'];
@@ -507,11 +531,13 @@ describe('smart-home state', () => {
     await harness.close();
   });
 
-  it('alexa_list_smart_home offers thermostat actions under the names this server takes, and nothing for a lock', async () => {
+  it('alexa_list_smart_home offers thermostat, mode, lock and garage actions under the names the tools take', async () => {
     const { harness } = await setup();
     const rows = parseToolResult<{ name: string; actions: string[] }[]>(await harness.callTool('alexa_list_smart_home'));
-    expect(rows.find((r) => r.name === 'Hallway Thermostat')?.actions).toEqual(['setTemperature', 'setThermostatMode']);
-    expect(rows.find((r) => r.name === 'Front Door')?.actions).toEqual([]);
+    expect(rows.find((r) => r.name === 'Hallway Thermostat')?.actions).toEqual(['setTemperature', 'setThermostatMode', 'setMode']);
+    expect(rows.find((r) => r.name === 'Front Door')?.actions).toEqual(['lock', 'unlock']);
+    expect(rows.find((r) => r.name === 'Garage')?.actions).toEqual(['open', 'close']);
+    expect(rows.find((r) => r.name === 'Roomba')?.actions).toEqual(['turnOn', 'turnOff', 'setMode']);
     expect(rows.find((r) => r.name === 'Desk Lamp')?.actions).toEqual(['turnOn', 'turnOff', 'setColor', 'setColorTemperature']);
     await harness.close();
   });
@@ -596,13 +622,17 @@ describe('light colour, and no lock control', () => {
     await harness.close();
   });
 
-  it('locks cannot be controlled (lock/unlock are not offered: the request shape is unverified)', async () => {
+  it('alexa_control_smart_home does not control locks (alexa_lock does) and stays non-destructive', async () => {
     const { harness, writes } = await setup();
     const result = await harness.callTool('alexa_control_smart_home', { target: 'front door', action: 'lock' });
     expect(result.isError).toBe(true);
     expect(writes('executeSmarthomeDeviceAction')).toHaveLength(0);
     const { tools } = await harness.client.listTools();
     expect(tools.find((t) => t.name === 'alexa_control_smart_home')?.annotations?.destructiveHint).toBe(false);
+    // Follow-up #9: lock wording lives only on alexa_lock.
+    expect(tools.find((t) => t.name === 'alexa_control_smart_home')?.description).not.toMatch(/lock/i);
+    const manifest = JSON.parse(readFileSync(join(ROOT, 'manifest.json'), 'utf8')) as { tools: { name: string; description: string }[] };
+    expect(manifest.tools.find((t) => t.name === 'alexa_control_smart_home')?.description).not.toMatch(/lock/i);
     await harness.close();
   });
 });
@@ -825,13 +855,13 @@ describe('descriptions point people to the right tool', () => {
     const { harness } = await setup();
     const { tools } = await harness.client.listTools();
     const hint = (n: string) => tools.find((t) => t.name === n)?.annotations ?? {};
-    for (const n of ['alexa_get_smart_home_state', 'alexa_get_do_not_disturb', 'alexa_get_equalizer', 'alexa_list_bluetooth']) {
+    for (const n of ['alexa_list_device_modes', 'alexa_get_smart_home_state', 'alexa_get_do_not_disturb', 'alexa_get_equalizer', 'alexa_list_bluetooth']) {
       expect(hint(n).readOnlyHint, n).toBe(true);
     }
-    for (const n of ['alexa_run_builtin', 'alexa_fire_tv', 'alexa_stop', 'alexa_cancel_alarm_reminder']) {
+    for (const n of ['alexa_run_builtin', 'alexa_fire_tv', 'alexa_stop', 'alexa_cancel_alarm_reminder', 'alexa_lock', 'alexa_garage_door']) {
       expect(hint(n).destructiveHint, n).toBe(true);
     }
-    for (const n of ['alexa_set_vacation_mode', 'alexa_set_thermostat', 'alexa_set_do_not_disturb', 'alexa_set_equalizer', 'alexa_create_reminder', 'alexa_create_timer', 'alexa_update_list_item', 'alexa_control_smart_home']) {
+    for (const n of ['alexa_set_vacation_mode', 'alexa_set_thermostat', 'alexa_set_do_not_disturb', 'alexa_set_equalizer', 'alexa_create_reminder', 'alexa_create_timer', 'alexa_update_list_item', 'alexa_control_smart_home', 'alexa_set_device_mode']) {
       expect(hint(n).destructiveHint, n).toBe(false);
     }
     await harness.close();
@@ -994,3 +1024,136 @@ function dualSetpointArgs(lower: number, upper: number) {
     'lowerSetTemperature.scale': 'fahrenheit',
   };
 }
+
+describe('device modes (fan mode, vacuum, light effects)', () => {
+  it('alexa_list_device_modes names each mode controller, its current value and its options', async () => {
+    const { harness } = await setup();
+    expect(parseToolResult(await harness.callTool('alexa_list_device_modes', { target: 'thermostat' }))).toEqual({
+      name: 'Hallway Thermostat',
+      modes: [
+        {
+          setting: 'Fan Mode',
+          instance: '5',
+          current: '1',
+          currentName: 'On',
+          options: [
+            { value: '1', name: 'On' },
+            { value: '2', name: 'Auto' },
+            { value: '3', name: 'Circulate' },
+          ],
+        },
+      ],
+    });
+    // No declared capabilities: the instance and the (JSON-string) state still come through.
+    expect(parseToolResult(await harness.callTool('alexa_list_device_modes', { target: 'roomba' }))).toMatchObject({
+      modes: [{ setting: 'Robot.MobilityState', instance: 'Robot.MobilityState', current: 'Docked', options: [] }],
+    });
+    expect((await harness.callTool('alexa_list_device_modes', { target: 'porch' })).isError).toBe(true);
+    await harness.close();
+  });
+
+  it('alexa_set_device_mode: gated, sends the verified setModeValue shape, matching setting and mode by friendly name', async () => {
+    const { harness, writes } = await setup();
+    const preview = parseToolResult<{ status: string }>(await harness.callTool('alexa_set_device_mode', { target: 'thermostat', setting: 'fan mode', mode: 'circulate' }));
+    expect(preview.status).toBe('confirmation-required');
+    expect(writes('executeSmarthomeDeviceAction')).toHaveLength(0);
+    await confirmed(harness, 'alexa_set_device_mode', { target: 'thermostat', setting: 'fan mode', mode: 'circulate' });
+    await confirmed(harness, 'alexa_set_device_mode', { target: 'thermostat', mode: '1' });
+    expect(writes('executeSmarthomeDeviceAction').map((c) => c.args)).toEqual([
+      [['e-thermo'], { action: 'setModeValue', instance: '5', mode: '3' }, 'APPLIANCE'],
+      [['e-thermo'], { action: 'setModeValue', instance: '5', mode: '1' }, 'APPLIANCE'],
+    ]);
+    await harness.close();
+  });
+
+  it('refuses an unknown mode or setting, listing what exists; passes a raw value when no values are declared', async () => {
+    const { harness, writes } = await setup();
+    const badMode = await harness.callTool('alexa_set_device_mode', { target: 'thermostat', mode: 'turbo' });
+    expect(badMode.isError).toBe(true);
+    expect(text(badMode)).toMatch(/On.*Auto.*Circulate/);
+    const badSetting = await harness.callTool('alexa_set_device_mode', { target: 'thermostat', setting: 'swing', mode: '1' });
+    expect(text(badSetting)).toContain('Fan Mode');
+    await confirmed(harness, 'alexa_set_device_mode', { target: 'roomba', mode: 'Docked' });
+    expect(writes('executeSmarthomeDeviceAction').map((c) => c.args)).toEqual([[['e-roomba'], { action: 'setModeValue', instance: 'Robot.MobilityState', mode: 'Docked' }, 'APPLIANCE']]);
+    await harness.close();
+  });
+
+  it('refuses garage doors (they go through alexa_garage_door) and devices with no modes', async () => {
+    const { harness, writes } = await setup();
+    const garage = await harness.callTool('alexa_set_device_mode', { target: 'garage', mode: 'Open' });
+    expect(garage.isError).toBe(true);
+    expect(text(garage)).toContain('alexa_garage_door');
+    expect(text(await harness.callTool('alexa_set_device_mode', { target: 'porch', mode: 'x' }))).toMatch(/no mode/i);
+    expect(writes('executeSmarthomeDeviceAction')).toHaveLength(0);
+    await harness.close();
+  });
+});
+
+describe('garage door', () => {
+  it('open/close use the declared Position modes, gated', async () => {
+    const { harness, writes } = await setup();
+    const preview = parseToolResult<{ status: string }>(await harness.callTool('alexa_garage_door', { target: 'garage', action: 'open' }));
+    expect(preview.status).toBe('confirmation-required');
+    expect(writes('executeSmarthomeDeviceAction')).toHaveLength(0);
+    await confirmed(harness, 'alexa_garage_door', { target: 'garage', action: 'open' });
+    await confirmed(harness, 'alexa_garage_door', { target: 'garage', action: 'close' });
+    expect(writes('executeSmarthomeDeviceAction').map((c) => c.args)).toEqual([
+      [['e-garage'], { action: 'setModeValue', instance: 'GarageDoor.Position', mode: 'Position.Up' }, 'APPLIANCE'],
+      [['e-garage'], { action: 'setModeValue', instance: 'GarageDoor.Position', mode: 'Position.Down' }, 'APPLIANCE'],
+    ]);
+    await harness.close();
+  });
+
+  it('prefers the device’s own mode named Open/Closed, and falls back to Position.Up/Down when none are declared', async () => {
+    const custom = modeCap('GarageDoor.Position', 'Door', [['UP_VAL', 'Open'], ['DOWN_VAL', 'Closed']]);
+    const endpoints = ENDPOINTS.map((e) =>
+      e.legacyAppliance.entityId === 'e-garage' ? { ...e, legacyAppliance: { ...e.legacyAppliance, capabilities: [custom] } } : e,
+    );
+    const { harness, writes } = await setup({ ...HANDLERS, getSmarthomeDevicesV2: () => endpoints });
+    await confirmed(harness, 'alexa_garage_door', { target: 'garage', action: 'close' });
+    const bare = ENDPOINTS.map((e) => (e.legacyAppliance.entityId === 'e-garage' ? { ...e, legacyAppliance: { ...e.legacyAppliance, capabilities: [] } } : e));
+    const second = await setup({ ...HANDLERS, getSmarthomeDevicesV2: () => bare });
+    await confirmed(second.harness, 'alexa_garage_door', { target: 'garage', action: 'open' });
+    expect(writes('executeSmarthomeDeviceAction')[0].args[1]).toEqual({ action: 'setModeValue', instance: 'GarageDoor.Position', mode: 'DOWN_VAL' });
+    expect(second.writes('executeSmarthomeDeviceAction')[0].args[1]).toEqual({ action: 'setModeValue', instance: 'GarageDoor.Position', mode: 'Position.Up' });
+    await harness.close();
+    await second.harness.close();
+  });
+
+  it('refuses a device that is not a garage door; the description says opening reduces security', async () => {
+    const { harness } = await setup();
+    expect(text(await harness.callTool('alexa_garage_door', { target: 'thermostat', action: 'open' }))).toMatch(/not a garage door/i);
+    const { tools } = await harness.client.listTools();
+    expect(tools.find((t) => t.name === 'alexa_garage_door')?.description).toMatch(/security/i);
+    await harness.close();
+  });
+});
+
+describe('locks', () => {
+  it('lock / unlock send lockAction / unlockAction, gated', async () => {
+    const { harness, writes } = await setup();
+    const preview = parseToolResult<{ status: string }>(await harness.callTool('alexa_lock', { target: 'front door', action: 'unlock' }));
+    expect(preview.status).toBe('confirmation-required');
+    expect(writes('executeSmarthomeDeviceAction')).toHaveLength(0);
+    await confirmed(harness, 'alexa_lock', { target: 'front door', action: 'lock' });
+    await confirmed(harness, 'alexa_lock', { target: 'front door', action: 'unlock' });
+    expect(writes('executeSmarthomeDeviceAction').map((c) => c.args)).toEqual([
+      [['e-lock'], { action: 'lockAction', 'targetLockState.value': 'LOCKED' }, 'APPLIANCE'],
+      [['e-lock'], { action: 'unlockAction', 'targetLockState.value': 'UNLOCKED' }, 'APPLIANCE'],
+    ]);
+    await harness.close();
+  });
+
+  it('only offered where the entity lists the operation; errors are surfaced verbatim with the app hint', async () => {
+    const { harness } = await setup({
+      ...HANDLERS,
+      executeSmarthomeDeviceAction: () => ({ controlResponses: [], errors: [{ code: 'VOICE_PIN_REQUIRED', entity: { entityId: 'e-lock' } }] }),
+    });
+    expect(text(await harness.callTool('alexa_lock', { target: 'porch', action: 'lock' }))).toMatch(/not a lock|does not support/i);
+    const failed = await confirmed(harness, 'alexa_lock', { target: 'front door', action: 'unlock' });
+    expect(failed.isError).toBe(true);
+    expect(text(failed)).toContain('VOICE_PIN_REQUIRED');
+    expect(text(failed)).toMatch(/Alexa app/);
+    await harness.close();
+  });
+});

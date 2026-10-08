@@ -49,6 +49,8 @@ Discovery also returned `api.amazonalexa.com`, `na-bob-dispatch-prod-alexa.amazo
 - **Reminders** — `createNotificationObject(serial, 'Reminder', label, timeMs, 'ON')` (synchronous, no callback) then `createNotification(obj)` returned the created notification with an `id` (a soundbar); `deleteNotification(obj)` with that object removed it. A **Fire TV refused** a reminder (`no JSON`, no `id`), so an answer without `id` is treated as a failure. Only devices with `REMINDERS` (reminders) or `TIMERS_AND_ALARMS` (alarms, timers) capabilities are offered.
 - **Bluetooth** — `getBluetooth(false)` → `{ bluetoothStates: [{ deviceSerialNumber, friendlyName, online, pairedDeviceList, streamingState, … }] }`.
 
+- **Device modes** (`alexa_set_device_mode`) — `executeSmarthomeDeviceAction([entityId], { action: 'setModeValue', instance: '<instance>', mode: '<value>' }, 'APPLIANCE')` answered `controlResponses[0].code SUCCESS` and the state re-read changed: a thermostat's Fan Mode (instance `5`) set to `3` Circulate, then restored to `1` On. These forms FAILED with `FAILURE_TO_SEND` in `controlResponses` (now treated as a failure): `{ action: 'setModeValue@…_5', mode }` and `{ action: 'setModeValue@…_5', 'mode.value' }`. The instance is everything after the first `_` following the uuid in a `setModeValue@<uuid>_<instance>` supportedOperation (`5`, `Robot.MobilityState`, `Light.Effect`). Names and values come from `getSmarthomeDevicesV2()[i].legacyAppliance.capabilities[]` where `interfaceName === 'Alexa.ModeController'` and `instance` matches: `resources.friendlyNames[].value.text` (or `.assetId`) and `configuration.supportedModes[] { value, modeResources.friendlyNames[] }` (instance 5 = "Fan Mode": 1 On, 2 Auto, 3 Circulate). The current value is the `Alexa.ModeController` `mode` state with that `instance`. When a device declares no values, the given value is sent as-is.
+
 ## Built to documented shapes, NOT live-verified
 
 These are audible, physical, or untested forms. They follow the library's documented call shapes and are unit-tested only.
@@ -57,7 +59,8 @@ These are audible, physical, or untested forms. They follow the library's docume
 - **Thermostat single setpoint** (HEAT / COOL): `{ action: 'setTargetTemperature', 'targetTemperature.value', 'targetTemperature.scale' }`.
 - **Thermostat mode**: `{ action: 'setThermostatMode', 'thermostatMode.value': 'HEAT'|'COOL'|'AUTO'|'OFF'|'ECO' }` (`ECO` is accepted by the tool, but the Amazon Smart Thermostat does not list it).
 - **Light colour**: `{ action: 'setColor', colorName }` and `{ action: 'setColorTemperature', colorTemperatureName }`.
-- **Lock**: `{ action: 'lockAction', 'targetLockState.value': 'LOCKED' }`, offered when the entity lists the `lockAction` operation. Both the operation name and the parameter key are assumptions from the phoenix API's naming, not the library's docs. Unlock is never sent.
+- **Locks** (`alexa_lock`; the account has no lock): `{ action: 'lockAction', 'targetLockState.value': 'LOCKED' }` and `{ action: 'unlockAction', 'targetLockState.value': 'UNLOCKED' }`, each offered only when the entity lists that operation. Both the operation names and the parameter key are assumptions from the phoenix API's naming, not the library's docs. Amazon may require a voice PIN, or the Alexa app, to unlock; any error code is surfaced verbatim with that hint.
+- **Garage doors** (`alexa_garage_door`; the account has none): the verified `setModeValue` shape (below) on the device's `GarageDoor.Position` mode instance. The value is the device's own declared mode named "Open…" / "Clos…", else its declared `Position.Up` / `Position.Down`, else those literals. The shape is verified; the garage instance and values are not. Garage instances are refused by `alexa_set_device_mode`, so opening is only ever behind the destructive tool.
 - **Alarms**: for `Alarm` the library builds a new-style `{ trigger: { scheduledTime }, extensions, endpointId }` object that `createNotification` POSTs to `/v1/alerts/alarms`. Whether that answer carries `id` like the reminder answer does is unverified.
 - **Timers**: the library ignores the time value for `Timer`; the server adds `remainingTime: <duration ms>`.
 - **Wall-clock time**: the library computes `originalDate / originalTime` (and an alarm's `scheduledTime`) in the SERVER's zone. The server overwrites them with the wall clock in the device's zone (`preferences.timeZoneId`, which the library loads at init). When that zone is unknown, it uses the literal time from the ISO string, or the server's zone for `inMinutes`. On 2026-10-08 the verified reminder ran with server zone = device zone, so the override was a no-op there.
@@ -77,12 +80,11 @@ The Alexa app DOES have a native Vacation Mode for these thermostats (Settings �
 
 ## Deliberately not used
 
-- `textCommand` (free-text "Alexa, …"): it can make purchases and unlock doors.
-- Unlock (`unlockAction`): reducing security stays manual.
+- `textCommand` (free-text "Alexa, …"): it can make purchases and unlock doors without going through a specific, confirm-gated tool.
 
 ## Verified through the built tools (2026-10-08, Upstairs thermostat)
 
 - `alexa_set_thermostat` upper 74 → 75 → 74 (lower 63 untouched), each confirmed by `alexa_get_smart_home_state`.
 - `alexa_set_vacation_mode` on (AUTO 63–74° → 55–85°, confirmed by re-read), a second "on" refused, then off (back to 63–74°, confirmed).
 - `alexa_get_smart_home_state`, `alexa_get_do_not_disturb`, `alexa_get_equalizer`, `alexa_list_bluetooth` read the live account.
-- Not offered: lock/unlock (request shape unverified; unlock would reduce security).
+- Lock/unlock and garage doors are now offered through `alexa_lock` / `alexa_garage_door` (destructive, confirm-gated) but are not live-verified: the account has neither.

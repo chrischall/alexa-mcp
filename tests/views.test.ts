@@ -6,6 +6,7 @@ import {
   compactRoutine,
   compactSmartHomeEntity,
   compactSmartHomeState,
+  modeInstance,
   compactVolume,
   parseCapabilityStates,
 } from '../src/views.js';
@@ -62,7 +63,8 @@ describe('compact views (shapes captured from the live API, values invented)', (
       kind: 'LIGHT',
       entityType: 'APPLIANCE',
       available: true,
-      actions: ['turnOn', 'turnOff', 'setBrightness'],
+      // setModeValue@…_Light.Effect is a mode controller: alexa_set_device_mode.
+      actions: ['turnOn', 'turnOff', 'setBrightness', 'setMode'],
     });
   });
 
@@ -120,5 +122,13 @@ describe('compact views (shapes captured from the live API, values invented)', (
       motion: 'DETECTED',
       connectivity: 'UNREACHABLE',
     });
+  });
+
+  it('mode instance is everything after the first underscore following the uuid', () => {
+    expect(modeInstance('setModeValue@0f3c9a2e-1b4d-4c6e-9a8b-7d5e3f1a2b4c_5')).toBe('5');
+    expect(modeInstance('setModeValue@abc_Robot.MobilityState')).toBe('Robot.MobilityState');
+    expect(modeInstance('setModeValue@abc_Light_Effect')).toBe('Light_Effect');
+    expect(modeInstance('turnOn')).toBeUndefined();
+    expect(modeInstance('setModeValue@nounderscore')).toBeUndefined();
   });
 });

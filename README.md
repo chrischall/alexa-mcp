@@ -2,7 +2,7 @@
 
 > This project was developed and is maintained by AI (Claude Code). Use at your own discretion.
 
-An MCP server for **Amazon Alexa**: list and control Echo speakers, Echo Shows and Fire TVs, make Alexa speak or announce, run routines, read and control the smart-home devices Alexa knows about (thermostats, lights, plugs, locks, scenes), read and edit shopping/to-do lists, and set or cancel alarms, timers and reminders.
+An MCP server for **Amazon Alexa**: list and control Echo speakers, Echo Shows and Fire TVs, make Alexa speak or announce, run routines, read and control the smart-home devices Alexa knows about (thermostats, lights, plugs, locks, garage doors, robot vacuums, scenes), read and edit shopping/to-do lists, and set or cancel alarms, timers and reminders.
 
 It talks to Amazon's **private** Alexa web API — the one the Alexa app uses — through [`alexa-remote2`](https://github.com/Apollon77/alexa-remote). There is no public API for any of this, so expect occasional breakage when Amazon changes things.
 
@@ -40,7 +40,11 @@ Under the hood this is the Alexa iOS app's OAuth sign-in with PKCE. The link car
 | `alexa_set_do_not_disturb` ✋ | Do Not Disturb on or off |
 | `alexa_set_equalizer` ✋ | Set bass / mid / treble |
 | `alexa_run_routine` ✋ | Run a routine now |
-| `alexa_control_smart_home` ✋ | turnOn / turnOff / setBrightness / setColor / setColorTemperature / sceneActivate / lock (never unlock; no garage doors) |
+| `alexa_control_smart_home` ✋ | turnOn / turnOff / setBrightness / setColor / setColorTemperature / sceneActivate |
+| `alexa_list_device_modes` | A device's mode settings (thermostat fan mode, vacuum mode, light effect), current value and options |
+| `alexa_set_device_mode` ✋ | Change one of those modes, e.g. fan mode to Circulate (not garage doors) |
+| `alexa_lock` ✋ | Lock or unlock a smart lock. Unlocking reduces security; Amazon may insist on a voice PIN or the Alexa app |
+| `alexa_garage_door` ✋ | Open or close a garage door. Opening reduces security |
 | `alexa_set_thermostat` ✋ | Thermostat setpoint(s) and/or mode, checked against the thermostat's allowed range |
 | `alexa_set_vacation_mode` ✋ | Thermostat vacation / away mode, emulated: saves each thermostat's settings, sets energy-saving setpoints, and restores them when turned off |
 | `alexa_create_reminder` ✋ / `alexa_create_timer` ✋ / `alexa_cancel_alarm_reminder` ✋ | Set a reminder, alarm or timer; cancel one |
@@ -53,8 +57,9 @@ Under the hood this is the Alexa iOS app's OAuth sign-in with PKCE. The link car
 
 **Deliberately left out:**
 
-- **Free-text voice commands** ("Alexa, …", the library's `textCommand`). They can buy things and unlock doors, so no tool sends one.
-- **Unlocking** smart locks. `lock` is offered, `unlock` is not: reducing security stays a manual step.
+- **Free-text voice commands** ("Alexa, …", the library's `textCommand`). They can buy things and unlock doors without going through a specific, confirm-gated tool, so no tool sends one.
+
+Unlocking a door and opening a garage door are possible, but only through `alexa_lock` and `alexa_garage_door`, which are marked destructive and always confirmation-gated.
 
 **Vacation mode is an emulation.** The Alexa app's own thermostat Vacation Mode is not reachable through the API this server uses (its thermostat modes are only HEAT / COOL / AUTO / OFF), so this does not flip the app's toggle. Instead `alexa_set_vacation_mode` saves each thermostat's mode and setpoints to `~/.alexa-mcp/vacation.json` (mode 0600) before it changes anything, then sets heat-to 55° / cool-to 85° (or what you ask for). Thermostats that are OFF stay OFF. Turning it off restores the saved settings. Turning it on twice is refused, so the originals are never overwritten.
 
@@ -69,7 +74,11 @@ Under the hood this is the Alexa iOS app's OAuth sign-in with PKCE. The link car
 | `MCP_CONFIRM_MODE` | `ask-user` | `ask-user` / `auto` / `refuse` — whether the model must get your approval in chat before using a `confirmToken`. |
 | `MCP_CONFIRM_ELICITATION` | on | `off` skips the confirmation prompt even on clients that declare support. |
 
-When both `ALEXA_REGISTRATION` and the state file are present, the state file wins if it is the same virtual device and at least as new (it is the refreshed copy); otherwise the env var wins (a fresh login).
+When both `ALEXA_REGISTRATION` and the state file are present, whichever has the newer `tokenDate` wins, whatever device it belongs to (a tie goes to the state file, the refreshed copy). So a re-login through `alexa_finish_login` survives a restart even with an older `ALEXA_REGISTRATION` still set, and a freshly pasted `ALEXA_REGISTRATION` beats an old state file.
+
+## Upgrading from 0.1
+
+0.2.0 changed how the connector signs in. The pasted `ALEXA_REGISTRATION` field is replaced by the browser sign-in flow (`auth.flow` in `mint.yaml`: a **Sign in to Amazon** link, then paste the address you land on). Existing hosted registrations must switch to the new flow: sign in once more through it. `alexa-mcp login --port <n>` is no longer needed: the flag is ignored with a notice, since the sign-in now happens in your own browser.
 
 ## Hosting
 

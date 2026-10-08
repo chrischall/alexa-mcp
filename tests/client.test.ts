@@ -180,6 +180,11 @@ describe('commands', () => {
     await expect(client.controlSmartHome('e1', { action: 'turnOn' }, 'APPLIANCE')).rejects.toThrow(/ENDPOINT_UNREACHABLE/);
   });
 
+  it('controlSmartHome treats a non-SUCCESS control response as a failure, naming the code', async () => {
+    const { client } = make({ executeSmarthomeDeviceAction: () => ({ controlResponses: [{ code: 'FAILURE_TO_SEND', entity: { entityId: 'e1' } }], errors: [] }) });
+    await expect(client.controlSmartHome('e1', { action: 'setModeValue' }, 'APPLIANCE')).rejects.toThrow(/FAILURE_TO_SEND/);
+  });
+
   it('controlSmartHome passes entity, parameters and type through', async () => {
     const { client, remote } = make({ executeSmarthomeDeviceAction: () => ({ controlResponses: [{ code: 'SUCCESS' }], errors: [] }) });
     await client.controlSmartHome('e1', { action: 'setBrightness', brightness: 40 }, 'GROUP');

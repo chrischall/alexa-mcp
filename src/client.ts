@@ -370,14 +370,15 @@ export class AlexaClient {
     parameters: Record<string, unknown>,
     entityType: SmartHomeEntityType,
   ): Promise<unknown> {
-    const body = await this.call<{ errors?: { code?: string; message?: string }[] }>(
+    const body = await this.call<{ errors?: { code?: string; message?: string }[]; controlResponses?: { code?: string; message?: string }[] }>(
       'executeSmarthomeDeviceAction',
       [entityId],
       parameters,
       entityType,
     );
-    // phoenix/state answers 200 with per-entity errors (e.g. ENDPOINT_UNREACHABLE) — a 200 is not success.
-    const errors = body?.errors ?? [];
+    // phoenix/state answers 200 with per-entity errors (e.g. ENDPOINT_UNREACHABLE) — a 200 is not success. A control
+    // response whose code is not SUCCESS (FAILURE_TO_SEND for a malformed setModeValue, live 2026-10-08) is a failure too.
+    const errors = [...(body?.errors ?? []), ...(body?.controlResponses ?? []).filter((r) => r?.code && r.code !== 'SUCCESS')];
     if (errors.length > 0) {
       const codes = errors.map((e) => e.code ?? e.message ?? 'UNKNOWN').join(', ');
       throw new McpToolError(`Alexa did not apply the smart-home action: ${codes}.`, {
