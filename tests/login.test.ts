@@ -4,17 +4,17 @@ import { parseRegistration } from '../src/registration.js';
 import { REGISTRATION } from './fakes.js';
 
 describe('parseLoginArgs', () => {
-  it('defaults to port 3456 on amazon.com without printing', () => {
-    expect(parseLoginArgs([])).toEqual({ port: 3456, amazonPage: 'amazon.com', print: false });
+  it('defaults to amazon.com without printing', () => {
+    expect(parseLoginArgs([])).toEqual({ amazonPage: 'amazon.com', print: false });
   });
 
-  it('reads --port, --amazon-page and --print', () => {
-    expect(parseLoginArgs(['--port', '4000', '--amazon-page', 'amazon.co.uk', '--print'])).toEqual({ port: 4000, amazonPage: 'amazon.co.uk', print: true });
+  it('reads --amazon-page and --print', () => {
+    expect(parseLoginArgs(['--amazon-page', 'amazon.co.uk', '--print'])).toEqual({ amazonPage: 'amazon.co.uk', print: true });
   });
 
-  it('rejects unknown flags, bad ports and non-Amazon pages', () => {
+  it('rejects unknown flags (including the retired --port) and non-Amazon pages', () => {
     expect(() => parseLoginArgs(['--nope'])).toThrow(/Unknown option/);
-    expect(() => parseLoginArgs(['--port', 'x'])).toThrow(/port/);
+    expect(() => parseLoginArgs(['--port', '3456'])).toThrow(/Unknown option/);
     expect(() => parseLoginArgs(['--amazon-page', 'evil.example'])).toThrow(/amazon-page/);
   });
 });

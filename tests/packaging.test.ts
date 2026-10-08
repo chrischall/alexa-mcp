@@ -69,10 +69,14 @@ describe('packaging', () => {
     expect(read('.release-please-manifest.json')['.']).toBe(v);
   });
 
-  it('mint.yaml asks each user for their own registration rather than sharing one', () => {
+  it('mint.yaml signs each user in through their own browser, never a shared credential', () => {
     const mint = readFileSync(join(ROOT, 'mint.yaml'), 'utf8');
     expect(mint).toMatch(/perUserChild:\s*true/);
-    expect(mint).toMatch(/- name: ALEXA_REGISTRATION/);
+    expect(mint).toMatch(/- tool: alexa_begin_login/);
+    expect(mint).toMatch(/- tool: alexa_finish_login/);
+    expect(mint).toMatch(/from: signInUrl/);
+    expect(mint).toMatch(/hosts: \[www\.amazon\.com\]/);
+    expect(mint).not.toMatch(/name: ALEXA_PASSWORD|name: ALEXA_EMAIL/);
     expect(mint).toMatch(/dataDir:\s*true/);
   });
 });

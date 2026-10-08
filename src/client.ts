@@ -19,6 +19,8 @@
  *  - An auth-shaped failure drops the session; the next call re-initialises.
  */
 
+import { dirname } from 'node:path';
+import { BrowserLogin } from './browser-login.js';
 import { McpToolError, readEnvVar } from '@chrischall/mcp-utils';
 import {
   type Env,
@@ -51,6 +53,8 @@ export interface AlexaClientOptions {
   factory?: RemoteFactory;
   refresh?: Refresher;
   now?: () => number;
+  /** For the sign-in exchange with api.amazon.com (tests). */
+  fetchImpl?: typeof fetch;
 }
 
 export interface ConfigDescription {
@@ -68,6 +72,7 @@ export class AlexaClient {
   private readonly factory: RemoteFactory;
   private readonly refresh: Refresher;
   private readonly now: () => number;
+  private readonly fetchImpl: typeof fetch | undefined;
   private readonly statePath: string;
   private loaded: LoadedRegistration | null = null;
   private configError: Error | null = null;
@@ -79,6 +84,7 @@ export class AlexaClient {
     this.factory = opts.factory ?? createAlexaRemote;
     this.refresh = opts.refresh ?? refreshWithCookieLib;
     this.now = opts.now ?? Date.now;
+    this.fetchImpl = opts.fetchImpl;
     this.statePath = registrationStatePath(this.env);
     try {
       this.loaded = loadRegistration(this.env);
@@ -103,6 +109,36 @@ export class AlexaClient {
       cookieAgeHours: tokenDate === undefined ? null : Math.round(((this.now() - tokenDate) / 3_600_000) * 10) / 10,
       stateFile: this.statePath,
     };
+  }
+
+  /** The directory the registration (and pending sign-ins) live in. */
+  get stateDir(): string {
+    return dirname(this.statePath);
+  }
+
+  /**
+   * Take on a registration from a just-finished sign-in: persist it, clear any
+   * "not configured" error, and drop the current session so the next call
+   * starts on the new account. Awaits the save — a sign-in whose result was
+   * not written would be lost on the next cold start.
+   */
+  async adoptRegistration(registration: Registration): Promise<void> {
+    await this.persisting;
+    await saveRegistration(this.statePath, registration);
+    this.loaded = { registration, source: 'state-file' };
+    this.configError = null;
+    this.dropSession();
+  }
+
+  /** A browser sign-in bound to this client's state dir, Amazon site and refresher. */
+  browserLogin(): BrowserLogin {
+    return new BrowserLogin({
+      stateDir: this.stateDir,
+      amazonPage: this.amazonPage,
+      fetchImpl: this.fetchImpl,
+      now: this.now,
+      complete: (seed) => this.refresh(seed, this.amazonPage),
+    });
   }
 
   /** Resolves once every queued state-file write has settled. */

@@ -195,3 +195,25 @@ describe('commands', () => {
     expect(remote.calls.at(-1)).toEqual({ method: 'deleteListItem', args: ['list-1', 'item-1', { version: 3 }] });
   });
 });
+
+describe('adoptRegistration (finishing a sign-in)', () => {
+  it('makes an unconfigured client usable, persists the registration, and starts a fresh session', async () => {
+    env.ALEXA_REGISTRATION = undefined;
+    const { client, remote } = make({ getDevices: () => ({ devices: DEVICES }) });
+    await expect(client.listDevices()).rejects.toThrow();
+    await client.adoptRegistration({ ...REGISTRATION, loginCookie: 'adopted' });
+    expect(client.describeConfig()).toMatchObject({ configured: true, source: 'state-file' });
+    await client.listDevices();
+    expect(remote.inits.at(-1)?.registration.loginCookie).toBe('adopted');
+    expect(JSON.parse(readFileSync(registrationStatePath(env), 'utf8')).loginCookie).toBe('adopted');
+  });
+
+  it('replaces a live session rather than reusing the old account', async () => {
+    const { client, remote } = make({ getDevices: () => ({ devices: DEVICES }) });
+    await client.listDevices();
+    await client.adoptRegistration({ ...REGISTRATION, deviceSerial: 'new-device', loginCookie: 'second' });
+    await client.listDevices();
+    expect(remote.inits).toHaveLength(2);
+    expect(remote.session.stop).toHaveBeenCalled();
+  });
+});
