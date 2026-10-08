@@ -36,7 +36,7 @@ const BIN = join(ROOT, 'dist', 'index.js');
  * serves its tools". The value is the full read+write surface, so
  * dropping a registrar still fails here.
  */
-const MIN_TOOLS = 19;
+const MIN_TOOLS = 34;
 
 beforeAll(() => {
   if (!existsSync(BUNDLE) || !existsSync(BIN)) {

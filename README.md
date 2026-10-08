@@ -2,7 +2,7 @@
 
 > This project was developed and is maintained by AI (Claude Code). Use at your own discretion.
 
-An MCP server for **Amazon Alexa**: list and control Echo speakers, Echo Shows and Fire TVs, make Alexa speak or announce, run routines, control the smart-home devices and scenes Alexa knows about, read and edit shopping/to-do lists, and see alarms, timers and reminders.
+An MCP server for **Amazon Alexa**: list and control Echo speakers, Echo Shows and Fire TVs, make Alexa speak or announce, run routines, read and control the smart-home devices Alexa knows about (thermostats, lights, plugs, locks, scenes), read and edit shopping/to-do lists, and set or cancel alarms, timers and reminders.
 
 It talks to Amazon's **private** Alexa web API — the one the Alexa app uses — through [`alexa-remote2`](https://github.com/Apollon77/alexa-remote). There is no public API for any of this, so expect occasional breakage when Amazon changes things.
 
@@ -20,24 +20,43 @@ Under the hood this is the Alexa iOS app's OAuth sign-in with PKCE. The link car
 
 | Tool | What it does |
 |---|---|
-| `alexa_list_devices` | Echo/Fire TV/other Alexa devices with online status |
+| `alexa_list_devices` | Echo speakers, Echo Shows, Fire TVs and other Alexa devices with online status (not thermostats, lights or plugs: those are smart-home) |
 | `alexa_get_now_playing` | Media state on one device |
-| `alexa_list_volumes` | Volume and mute (only devices Amazon reports — often just a few) |
+| `alexa_list_volumes` | Volume and mute (only devices Amazon reports, often just a few) |
+| `alexa_get_do_not_disturb` | Which devices have Do Not Disturb on |
+| `alexa_get_equalizer` | Bass / mid / treble of a speaker or soundbar |
+| `alexa_list_bluetooth` | Bluetooth devices paired with each Echo, and what's streaming |
 | `alexa_list_routines` | Routines with their triggers |
-| `alexa_list_smart_home` | Smart-home devices, groups and scenes, with the actions this server can send |
+| `alexa_list_smart_home` | Thermostats, lights, plugs, locks, sensors, groups and scenes, with the actions this server can send to each |
+| `alexa_get_smart_home_state` | Live state: thermostat temperature, mode and setpoints, humidity, light on/brightness/colour, lock state, sensors, reachability |
 | `alexa_list_lists` / `alexa_get_list_items` | Shopping and to-do lists |
-| `alexa_list_alarms_reminders` | Alarms, timers and reminders |
+| `alexa_list_alarms_reminders` | Alarms, timers and reminders (with ids for cancelling) |
 | `alexa_set_volume` ✋ | Set a device's volume |
 | `alexa_playback` ✋ | Play / pause / next / previous |
+| `alexa_stop` ✋ | Stop one device (or all of them): music, a ringing alarm, speech |
 | `alexa_speak` ✋ | Speak on one device, or announce on several |
+| `alexa_run_builtin` ✋ | Play weather, traffic, the news briefing, a joke, a story, calendar and other built-ins out loud |
+| `alexa_fire_tv` ✋ | Fire TV on / off / pause / resume / home |
+| `alexa_set_do_not_disturb` ✋ | Do Not Disturb on or off |
+| `alexa_set_equalizer` ✋ | Set bass / mid / treble |
 | `alexa_run_routine` ✋ | Run a routine now |
-| `alexa_control_smart_home` ✋ | turnOn / turnOff / setBrightness / sceneActivate (no locks, garage doors or thermostats) |
-| `alexa_add_list_item` ✋ / `alexa_remove_list_item` ✋ | Edit a list |
+| `alexa_control_smart_home` ✋ | turnOn / turnOff / setBrightness / setColor / setColorTemperature / sceneActivate / lock (never unlock; no garage doors) |
+| `alexa_set_thermostat` ✋ | Thermostat setpoint(s) and/or mode, checked against the thermostat's allowed range |
+| `alexa_set_vacation_mode` ✋ | Thermostat vacation / away mode, emulated: saves each thermostat's settings, sets energy-saving setpoints, and restores them when turned off |
+| `alexa_create_reminder` ✋ / `alexa_create_timer` ✋ / `alexa_cancel_alarm_reminder` ✋ | Set a reminder, alarm or timer; cancel one |
+| `alexa_add_list_item` ✋ / `alexa_update_list_item` ✋ / `alexa_remove_list_item` ✋ | Edit a list: add, check off / un-check, delete |
 | `alexa_begin_login` / `alexa_finish_login` | Browser sign-in (see above) |
 | `alexa_session_status` | Configuration, no network |
 | `alexa_healthcheck` | Does Amazon still accept the session? |
 
-✋ = **confirmation-gated.** A client that supports prompts asks you first; elsewhere (claude.ai, Claude Desktop) the first call sends nothing and returns a preview plus a `confirmToken`, and only a repeat call with that token acts. Arbitrary voice commands ("Alexa, …") are deliberately **not** exposed: they can buy things and unlock doors.
+✋ = **confirmation-gated.** A client that supports prompts asks you first; elsewhere (claude.ai, Claude Desktop) the first call sends nothing and returns a preview plus a `confirmToken`, and only a repeat call with that token acts.
+
+**Deliberately left out:**
+
+- **Free-text voice commands** ("Alexa, …", the library's `textCommand`). They can buy things and unlock doors, so no tool sends one.
+- **Unlocking** smart locks. `lock` is offered, `unlock` is not: reducing security stays a manual step.
+
+**Vacation mode is an emulation.** Alexa's thermostat API has no vacation, away or eco mode for Amazon Smart Thermostats (only HEAT / COOL / AUTO / OFF), so `alexa_set_vacation_mode` saves each thermostat's mode and setpoints to `~/.alexa-mcp/vacation.json` (mode 0600) before it changes anything, then sets heat-to 55° / cool-to 85° (or what you ask for). Thermostats that are OFF stay OFF. Turning it off restores the saved settings. Turning it on twice is refused, so the originals are never overwritten.
 
 ## Configuration
 

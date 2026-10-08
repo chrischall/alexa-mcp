@@ -5,7 +5,9 @@ import {
   compactNotification,
   compactRoutine,
   compactSmartHomeEntity,
+  compactSmartHomeState,
   compactVolume,
+  parseCapabilityStates,
 } from '../src/views.js';
 import { DEVICES } from './fakes.js';
 
@@ -81,10 +83,42 @@ describe('compact views (shapes captured from the live API, values invented)', (
   it('notification normalises alarms, timers and reminders', () => {
     expect(
       compactNotification({ type: 'Reminder', status: 'ON', reminderLabel: 'call mom', deviceSerialNumber: 'G0001', originalDate: '2026-10-08', originalTime: '09:00:00.000', recurringPattern: null }),
-    ).toEqual({ type: 'Reminder', on: true, label: 'call mom', device: 'G0001', date: '2026-10-08', time: '09:00', recurring: null });
+    ).toEqual({ id: null, type: 'Reminder', on: true, label: 'call mom', device: 'G0001', date: '2026-10-08', time: '09:00', recurring: null });
   });
 
   it('volume reports level and mute per device serial', () => {
     expect(compactVolume({ dsn: 'G0001', speakerVolume: 40, speakerMuted: false, alertVolume: null })).toEqual({ serial: 'G0001', volume: 40, muted: false });
+  });
+
+  it('capability states: JSON strings are parsed, garbage is dropped', () => {
+    expect(parseCapabilityStates(['{"namespace":"Alexa.PowerController","name":"powerState","value":"OFF"}', 'not json', 7, { namespace: 'A', name: 'b', value: 1 }])).toEqual([
+      { namespace: 'Alexa.PowerController', name: 'powerState', value: 'OFF' },
+      { namespace: 'A', name: 'b', value: 1 },
+    ]);
+    expect(parseCapabilityStates(undefined)).toEqual([]);
+  });
+
+  it('state projection covers colour, colour temperature, single setpoint, lock, contact and motion', () => {
+    const s = (namespace: string, name: string, value: unknown) => ({ namespace, name, value });
+    expect(
+      compactSmartHomeState([
+        s('Alexa.ColorController', 'color', { hue: 0, saturation: 1, brightness: 1 }),
+        s('Alexa.ColorTemperatureController', 'colorTemperatureInKelvin', 2700),
+        s('Alexa.ThermostatController', 'targetSetpoint', { value: 21, scale: 'CELSIUS' }),
+        s('Alexa.LockController', 'lockState', 'LOCKED'),
+        s('Alexa.ContactSensor', 'detectionState', 'NOT_DETECTED'),
+        s('Alexa.MotionSensor', 'detectionState', 'DETECTED'),
+        s('Alexa.EndpointHealth', 'connectivity', { value: 'UNREACHABLE' }),
+      ]),
+    ).toEqual({
+      color: { hue: 0, saturation: 1, brightness: 1 },
+      colorTemperatureInKelvin: 2700,
+      targetSetpoint: 21,
+      scale: 'CELSIUS',
+      lockState: 'LOCKED',
+      contact: 'NOT_DETECTED',
+      motion: 'DETECTED',
+      connectivity: 'UNREACHABLE',
+    });
   });
 });

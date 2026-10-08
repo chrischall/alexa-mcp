@@ -34,6 +34,20 @@ export async function resolveList(client: AlexaClient, query: string) {
   return match;
 }
 
+/** Find a list item by id, or by exact (case-insensitive) name when that name is unique. */
+function findItem(items: ReturnType<typeof compactListItem>[], item: string, listName: string) {
+  const q = item.trim().toLowerCase();
+  const byId = items.find((i) => i.id.toLowerCase() === q);
+  const byName = items.filter((i) => i.name.toLowerCase() === q);
+  const found = byId ?? (byName.length === 1 ? byName[0] : undefined);
+  if (!found) {
+    throw new McpToolError(byName.length > 1 ? `"${item}" appears ${byName.length} times on the list.` : `"${item}" is not on ${listName}.`, {
+      hint: byName.length > 1 ? 'Pass the item id from alexa_get_list_items.' : 'alexa_get_list_items shows what is there.',
+    });
+  }
+  return found;
+}
+
 export function registerListTools(server: McpServer, client: AlexaClient): void {
   server.registerTool(
     'alexa_list_lists',
@@ -93,6 +107,40 @@ export function registerListTools(server: McpServer, client: AlexaClient): void 
   );
 
   server.registerTool(
+    'alexa_update_list_item',
+    {
+      description:
+        'Check off (mark complete) or un-check (mark active again) an item on an Alexa shopping or to-do list, by ' +
+        'its name or item id from alexa_get_list_items.' +
+        WRITE_SUFFIX,
+      annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true }),
+      inputSchema: z.object({
+        list: listArg,
+        item: z.string().min(1).describe('Item text (exact, case-insensitive) or item id.'),
+        completed: z.boolean().describe('true marks it complete; false marks it active again.'),
+        confirmToken: confirmTokenParam,
+      }),
+    },
+    async ({ list, item, completed, confirmToken }, ctx) => {
+      const target = await resolveList(client, list);
+      const found = findItem((await client.getListItems(target.id)).map(compactListItem), item, target.name ?? target.type ?? target.id);
+      const gate = await confirmWrite(ctx, {
+        tool: 'alexa_update_list_item',
+        action: 'alexa.update_list_item',
+        summary: `Mark "${found.name}" ${completed ? 'complete' : 'active'} on ${target.name ?? target.type}`,
+        account: undefined,
+        target: found.id,
+        revision: String(found.version),
+        payload: { listId: target.id, itemId: found.id, version: found.version, completed },
+        confirmToken,
+      });
+      if (gate) return gate;
+      await client.updateListItem(target.id, found.id, { value: found.name, completed, version: found.version });
+      return minifiedResult({ ok: true, list: target.name ?? target.type, item: found.name, completed });
+    },
+  );
+
+  server.registerTool(
     'alexa_remove_list_item',
     {
       description:
@@ -108,17 +156,7 @@ export function registerListTools(server: McpServer, client: AlexaClient): void 
     },
     async ({ list, item, confirmToken }, ctx) => {
       const target = await resolveList(client, list);
-      const items = (await client.getListItems(target.id)).map(compactListItem);
-      const q = item.trim().toLowerCase();
-      const byId = items.find((i) => i.id.toLowerCase() === q);
-      const byName = items.filter((i) => i.name.toLowerCase() === q);
-      const found = byId ?? (byName.length === 1 ? byName[0] : undefined);
-      if (!found) {
-        throw new McpToolError(
-          byName.length > 1 ? `"${item}" appears ${byName.length} times on the list.` : `"${item}" is not on ${target.name ?? target.type}.`,
-          { hint: byName.length > 1 ? 'Pass the item id from alexa_get_list_items.' : 'alexa_get_list_items shows what is there.' },
-        );
-      }
+      const found = findItem((await client.getListItems(target.id)).map(compactListItem), item, target.name ?? target.type ?? target.id);
       const gate = await confirmWrite(ctx, {
         tool: 'alexa_remove_list_item',
         action: 'alexa.remove_list_item',

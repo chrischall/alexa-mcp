@@ -196,6 +196,69 @@ describe('commands', () => {
   });
 });
 
+describe('wider surface', () => {
+  it('querySmartHomeState asks for APPLIANCE state by applianceId', async () => {
+    const { client, remote } = make({ querySmarthomeDevices: () => ({ deviceStates: [], errors: [] }) });
+    await client.querySmartHomeState(['a1', 'a2']);
+    expect(remote.calls.at(-1)).toEqual({ method: 'querySmarthomeDevices', args: [['a1', 'a2'], 'APPLIANCE'] });
+  });
+
+  it('listSmartHomeEndpoints reads getSmarthomeDevicesV2', async () => {
+    const { client, remote } = make({ getSmarthomeDevicesV2: () => [{ legacyAppliance: { applianceId: 'a1', entityId: 'e1' } }] });
+    expect(await client.listSmartHomeEndpoints()).toHaveLength(1);
+    expect(remote.calls.at(-1)?.method).toBe('getSmarthomeDevicesV2');
+  });
+
+  it('Do Not Disturb, equalizer, bluetooth and sequence commands pass their arguments through', async () => {
+    const { client, remote } = make();
+    await client.getDoNotDisturb();
+    await client.setDoNotDisturb('G0001', true);
+    await client.getEqualizer('G0001');
+    await client.setEqualizer('G0001', 1, 2, 3);
+    await client.getBluetooth();
+    await client.sequence('G0001', 'joke');
+    await client.updateListItem('l', 'i', { value: 'milk', completed: true, version: 2 });
+    expect(remote.calls.map((c) => [c.method, ...c.args])).toEqual([
+      ['getDoNotDisturb'],
+      ['setDoNotDisturb', 'G0001', true],
+      ['getEqualizerSettings', 'G0001'],
+      ['setEqualizerSettings', 'G0001', 1, 2, 3],
+      ['getBluetooth', false],
+      ['sendSequenceCommand', 'G0001', 'joke', null],
+      ['updateListItem', 'l', 'i', { value: 'milk', completed: true, version: 2 }],
+    ]);
+  });
+
+  it('deviceTimeZone reads the preferences the library attached at init, or undefined', async () => {
+    const { client } = make();
+    expect(await client.deviceTimeZone('G0001')).toBe('America/New_York');
+    expect(await client.deviceTimeZone('G0002')).toBeUndefined();
+  });
+
+  it('createAlert builds the object with the library, then creates it; no id in the answer is a failure', async () => {
+    const { client, remote } = make({ createNotification: (n: unknown) => ({ ...(n as object), id: 'n1' }) });
+    const created = await client.createAlert({ serial: 'G0001', type: 'Reminder', label: 'x', timeMs: 123 });
+    expect(created.id).toBe('n1');
+    expect(remote.calls.map((c) => c.method)).toEqual(['createNotificationObject', 'createNotification']);
+    const tweaked = await client.createAlert({ serial: 'G0001', type: 'Reminder', label: 'x', timeMs: 123, edit: (o) => ({ ...o, extra: 1 }) });
+    expect(remote.calls.at(-1)?.args[0]).toMatchObject({ extra: 1 });
+    expect(tweaked.id).toBe('n1');
+
+    const { client: refusing } = make({ createNotification: () => null });
+    await expect(refusing.createAlert({ serial: 'G0003', type: 'Reminder', label: 'x', timeMs: 1 })).rejects.toMatchObject({
+      hint: expect.stringContaining('may not support reminders'),
+    });
+    await expect(refusing.createAlert({ serial: 'nope', type: 'Reminder', label: 'x', timeMs: 1 })).rejects.toThrow(/nope/);
+  });
+
+  it('deleteNotification passes the whole notification object', async () => {
+    const { client, remote } = make();
+    const n = { id: 'n1', type: 'Reminder' };
+    await client.deleteNotification(n);
+    expect(remote.calls.at(-1)).toEqual({ method: 'deleteNotification', args: [n] });
+  });
+});
+
 describe('adoptRegistration (finishing a sign-in)', () => {
   it('makes an unconfigured client usable, persists the registration, and starts a fresh session', async () => {
     env.ALEXA_REGISTRATION = undefined;

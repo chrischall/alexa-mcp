@@ -40,9 +40,27 @@ export function compactRoutine(r: Rec) {
   };
 }
 
-/** The `phoenix/state` actions this server sends. Anything else in supportedOperations is not offered. */
-export const SMART_HOME_ACTIONS = ['turnOn', 'turnOff', 'setBrightness', 'sceneActivate'] as const;
+/** The `phoenix/state` actions alexa_control_smart_home sends. */
+export const SMART_HOME_ACTIONS = ['turnOn', 'turnOff', 'setBrightness', 'sceneActivate', 'setColor', 'setColorTemperature', 'lock'] as const;
 export type SmartHomeAction = (typeof SMART_HOME_ACTIONS)[number];
+
+/**
+ * supportedOperations → the action name this server offers for it, in display
+ * order. Anything not here (unlockAction, rampBrightness, vendor modes) is not
+ * offered. Unlocking stays out deliberately: it reduces security.
+ */
+const OFFERED_ACTIONS: [operation: string, action: string][] = [
+  ['turnOn', 'turnOn'],
+  ['turnOff', 'turnOff'],
+  ['setBrightness', 'setBrightness'],
+  ['sceneActivate', 'sceneActivate'],
+  ['setColor', 'setColor'],
+  ['setColorTemperature', 'setColorTemperature'],
+  ['lockAction', 'lock'],
+  // Performed by alexa_set_thermostat.
+  ['setTargetTemperature', 'setTemperature'],
+  ['setThermostatMode', 'setThermostatMode'],
+];
 
 export function compactSmartHomeEntity(e: Rec) {
   const provider = (e.providerData ?? {}) as Rec;
@@ -53,7 +71,106 @@ export function compactSmartHomeEntity(e: Rec) {
     kind: str(provider.deviceType) ?? str(provider.categoryType) ?? null,
     entityType: provider.categoryType === 'GROUP' || provider.categoryType === 'VIRTUALGROUP' ? 'GROUP' : 'APPLIANCE',
     available: (e.availability ?? 'AVAILABLE') === 'AVAILABLE',
-    actions: SMART_HOME_ACTIONS.filter((a) => ops.includes(a)),
+    actions: OFFERED_ACTIONS.filter(([op]) => ops.includes(op)).map(([, action]) => action),
+  };
+}
+
+/** One parsed `capabilityStates` element: `{ namespace, name, instance?, value }`. */
+export interface CapabilityState {
+  namespace: string;
+  name: string;
+  instance?: string;
+  value: unknown;
+  [key: string]: unknown;
+}
+
+/** `querySmarthomeDevices` capabilityStates — each element may arrive as a JSON string (live 2026-10-08). */
+export function parseCapabilityStates(raw: unknown): CapabilityState[] {
+  if (!Array.isArray(raw)) return [];
+  const out: CapabilityState[] = [];
+  for (const el of raw) {
+    let v: unknown = el;
+    if (typeof el === 'string') {
+      try {
+        v = JSON.parse(el);
+      } catch {
+        continue;
+      }
+    }
+    if (v && typeof v === 'object' && typeof (v as Rec).namespace === 'string' && typeof (v as Rec).name === 'string') {
+      out.push(v as CapabilityState);
+    }
+  }
+  return out;
+}
+
+/** A temperature value: `{ value, scale }` or a bare number. */
+export function temperatureValue(v: unknown): number | undefined {
+  if (typeof v === 'number') return v;
+  if (v && typeof v === 'object' && typeof (v as Rec).value === 'number') return (v as Rec).value as number;
+  return undefined;
+}
+const scaleOf = (v: unknown): string | undefined => (v && typeof v === 'object' ? str((v as Rec).scale) : undefined);
+
+/**
+ * The common, documented capability states, flattened. Temperatures are bare
+ * numbers with one shared `scale`. Only fields the device reports appear.
+ */
+export function compactSmartHomeState(states: CapabilityState[]): Rec {
+  const get = (namespace: string, name: string) => states.find((s) => s.namespace === namespace && s.name === name)?.value;
+  const out: Rec = {};
+  const put = (key: string, v: unknown) => {
+    if (v !== undefined && v !== null) out[key] = v;
+  };
+  put('power', get('Alexa.PowerController', 'powerState'));
+  put('brightness', get('Alexa.BrightnessController', 'brightness'));
+  put('color', get('Alexa.ColorController', 'color'));
+  put('colorTemperatureInKelvin', get('Alexa.ColorTemperatureController', 'colorTemperatureInKelvin'));
+  const temperature = get('Alexa.TemperatureSensor', 'temperature');
+  const lower = get('Alexa.ThermostatController', 'lowerSetpoint');
+  const upper = get('Alexa.ThermostatController', 'upperSetpoint');
+  const target = get('Alexa.ThermostatController', 'targetSetpoint');
+  put('temperature', temperatureValue(temperature));
+  const scale =
+    str(get('Alexa.ThermostatController.Configuration', 'temperatureScale')) ??
+    [temperature, lower, upper, target].map(scaleOf).find(Boolean);
+  if (temperature !== undefined || lower !== undefined || upper !== undefined || target !== undefined) put('scale', scale);
+  put('humidity', get('Alexa.HumiditySensor', 'relativeHumidity'));
+  put('thermostatMode', get('Alexa.ThermostatController', 'thermostatMode'));
+  put('lowerSetpoint', temperatureValue(lower));
+  put('upperSetpoint', temperatureValue(upper));
+  put('targetSetpoint', temperatureValue(target));
+  const hvacNs = 'Alexa.ThermostatController.HVAC.Components';
+  const hvac: Rec = {};
+  for (const [key, name] of [
+    ['cooler', 'coolerOperation'],
+    ['heater', 'primaryHeaterOperation'],
+    ['fan', 'fanOperation'],
+  ] as const) {
+    const v = get(hvacNs, name);
+    if (v !== undefined) hvac[key] = v;
+  }
+  if (Object.keys(hvac).length > 0) out.hvac = hvac;
+  put('lockState', get('Alexa.LockController', 'lockState'));
+  put('contact', get('Alexa.ContactSensor', 'detectionState'));
+  put('motion', get('Alexa.MotionSensor', 'detectionState'));
+  const conn = get('Alexa.EndpointHealth', 'connectivity');
+  put('connectivity', conn && typeof conn === 'object' ? (conn as Rec).value : conn);
+  return out;
+}
+
+/** `getBluetooth` → per-Echo paired devices. Paired-device names are third-party text. */
+export function compactBluetooth(b: Rec) {
+  const paired = Array.isArray(b.pairedDeviceList) ? (b.pairedDeviceList as Rec[]) : [];
+  return {
+    serial: String(b.deviceSerialNumber),
+    online: b.online === true,
+    streamingState: str(b.streamingState) ?? null,
+    paired: paired.map((p) => ({
+      name: str(p.friendlyName) ?? null,
+      address: str(p.address) ?? null,
+      ...(typeof p.connected === 'boolean' ? { connected: p.connected } : {}),
+    })),
   };
 }
 
@@ -81,6 +198,7 @@ export function compactListItem(i: Rec) {
 export function compactNotification(n: Rec) {
   const time = str(n.originalTime);
   return {
+    id: str(n.id) ?? null,
     type: str(n.type) ?? null,
     on: n.status === 'ON',
     label: str(n.reminderLabel) ?? str(n.timerLabel) ?? null,

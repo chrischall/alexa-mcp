@@ -39,4 +39,43 @@ Discovery also returned `api.amazonalexa.com`, `na-bob-dispatch-prod-alexa.amazo
 - **Volume** — `sendSequenceCommand(serial, 'volume', n)` moved a soundbar 20 → 21 → 20, confirmed by re-reading `getAllDeviceVolumes`. The player form `sendCommand(serial, 'volume', n)` was accepted with no error and changed NOTHING while idle — do not use it.
 - **List items** — `addListItem` then `deleteListItem` (with the item's `version`) on the to-do list, each confirmed by re-reading `getListItemsV2`.
 
-Not exercised live (audible or physical in the house): `speak`, `announcement`, playback, routines, smart-home actions. They use the library's documented call shapes and are unit-tested.
+## Verified live (2026-10-08)
+
+- **Smart-home state** — `querySmarthomeDevices(ids, 'APPLIANCE')` takes **applianceIds**, not entity ids. Map them with `getSmarthomeDevicesV2()` (the `/nexus/v1/graphql` endpoints list): each item has `legacyAppliance { applianceId, entityId, friendlyName, … }` and `displayCategories.primary.value` (`THERMOSTAT`, `LIGHT`, …). `legacyAppliance.entityId` equals `getSmarthomeEntities()[i].id`, the id `executeSmarthomeDeviceAction` uses. The answer is `{ deviceStates: [{ entity, capabilityStates[], error }], errors: [{ code, message, entity }] }`. **Some `capabilityStates` elements are JSON strings**; each parses to `{ namespace, name, instance?, value }`. Seen on a light: `Alexa.PowerController powerState`, `Alexa.BrightnessController brightness`, `Alexa.ModeController mode (instance Light.Effect)`, `Alexa.EndpointHealth connectivity {value}`. Seen on a thermostat: `Alexa.TemperatureSensor temperature / preciseTemperature {value, scale}`, `Alexa.HumiditySensor relativeHumidity`, `Alexa.ThermostatController thermostatMode`, `lowerSetpoint` / `upperSetpoint` (AUTO; single-setpoint modes use `targetSetpoint`) `{value, scale}`, `Alexa.ThermostatController.HVAC.Components coolerOperation / primaryHeaterOperation / fanOperation`, `Alexa.ThermostatController.Configuration allowedTemperatureRange {heating: {minimum, maximum}, …}` and `temperatureScale`.
+- **Thermostat setpoint, dual (AUTO) form** — `executeSmarthomeDeviceAction([entityId], { action: 'setTargetTemperature', 'upperSetTemperature.value', 'upperSetTemperature.scale': 'fahrenheit', 'lowerSetTemperature.value', 'lowerSetTemperature.scale' }, 'APPLIANCE')` answered `controlResponses[0].code SUCCESS`; a re-read showed the new upper setpoint (then restored). The server always sends BOTH bounds, filling the missing one from a fresh read.
+- **Thermostat modes (Amazon Smart Thermostat, 3 units)** — `ThermostatController` supportedModes are only `HEAT / COOL / AUTO / OFF`: no `ECO`, `AWAY` or `VACATION`. Also a `ModeController` "Fan Mode" (`"1"` On, `"2"` Auto, `"3"` Circulate) and `RangeController`s for display brightness (neither is exposed here).
+- **Do Not Disturb** — `getDoNotDisturb()` → `{ doNotDisturbDeviceStatusList: [{ deviceSerialNumber, deviceType, enabled }] }`; `setDoNotDisturb(serial, enabled)` toggled it, confirmed by re-read.
+- **Equalizer** (a soundbar) — `getEqualizerSettings(serial)` → `{ bass, mid, treble }`; `setEqualizerSettings(serial, bass, mid, treble)` echoed and re-read the new values. Devices without `EQUALIZER_CONTROLLER_*` capabilities are refused before any call.
+- **Reminders** — `createNotificationObject(serial, 'Reminder', label, timeMs, 'ON')` (synchronous, no callback) then `createNotification(obj)` returned the created notification with an `id` (a soundbar); `deleteNotification(obj)` with that object removed it. A **Fire TV refused** a reminder (`no JSON`, no `id`), so an answer without `id` is treated as a failure. Only devices with `REMINDERS` (reminders) or `TIMERS_AND_ALARMS` (alarms, timers) capabilities are offered.
+- **Bluetooth** — `getBluetooth(false)` → `{ bluetoothStates: [{ deviceSerialNumber, friendlyName, online, pairedDeviceList, streamingState, … }] }`.
+
+## Built to documented shapes, NOT live-verified
+
+These are audible, physical, or untested forms. They follow the library's documented call shapes and are unit-tested only.
+
+- `speak`, `announcement`, playback, routines, `turnOn / turnOff / setBrightness / sceneActivate` (from 2026-10-07).
+- **Thermostat single setpoint** (HEAT / COOL): `{ action: 'setTargetTemperature', 'targetTemperature.value', 'targetTemperature.scale' }`.
+- **Thermostat mode**: `{ action: 'setThermostatMode', 'thermostatMode.value': 'HEAT'|'COOL'|'AUTO'|'OFF'|'ECO' }` (`ECO` is accepted by the tool, but the Amazon Smart Thermostat does not list it).
+- **Light colour**: `{ action: 'setColor', colorName }` and `{ action: 'setColorTemperature', colorTemperatureName }`.
+- **Lock**: `{ action: 'lockAction', 'targetLockState.value': 'LOCKED' }`, offered when the entity lists the `lockAction` operation. Both the operation name and the parameter key are assumptions from the phoenix API's naming, not the library's docs. Unlock is never sent.
+- **Alarms**: for `Alarm` the library builds a new-style `{ trigger: { scheduledTime }, extensions, endpointId }` object that `createNotification` POSTs to `/v1/alerts/alarms`. Whether that answer carries `id` like the reminder answer does is unverified.
+- **Timers**: the library ignores the time value for `Timer`; the server adds `remainingTime: <duration ms>`.
+- **Wall-clock time**: the library computes `originalDate / originalTime` (and an alarm's `scheduledTime`) in the SERVER's zone. The server overwrites them with the wall clock in the device's zone (`preferences.timeZoneId`, which the library loads at init). When that zone is unknown, it uses the literal time from the ISO string, or the server's zone for `inMinutes`. On 2026-10-08 the verified reminder ran with server zone = device zone, so the override was a no-op there.
+- **Built-ins**: `sendSequenceCommand(serial, cmd, null)` for `weather, traffic, flashbriefing, goodmorning, funfact, joke, cleanup, singasong, tellstory, calendarToday, calendarTomorrow, calendarNext` (the library ignores the value for these).
+- **Fire TV**: `fireTVTurnOn / fireTVTurnOff / fireTVPauseVideo / fireTVResumeVideo / fireTVNavigateHome` sequence commands. The library itself refuses a non-`FIRE_TV` device or one without `deviceAccountId`.
+- **Stop**: `deviceStop` (one device) / `deviceStopAll` sequence commands.
+- **List item completion**: `updateListItem(listId, itemId, { value, completed, version })`. The library refuses without `value` (the item name, re-sent unchanged) and `version` (re-read first). Note that the library builds that URL as `?version =<n>` (with a space).
+
+## Vacation mode is an emulation
+
+There is no vacation/away mode in this API (see the supportedModes above). `alexa_set_vacation_mode` therefore:
+
+1. reads each thermostat's mode and setpoints, and writes them to `<stateDir>/vacation.json` (0600) **before** sending anything;
+2. sets AUTO thermostats to the verified dual form, lower = heatTo (55 °F / 13 °C) and upper = coolTo (85 °F / 29 °C), clamped to `allowedTemperatureRange`; HEAT / COOL thermostats keep their mode and get the single-setpoint form (unverified); OFF thermostats are left OFF and not saved;
+3. refuses to enable while any target already has a saved entry, so originals are never overwritten;
+4. on disable, restores the saved mode (only if it changed) and setpoints, and deletes each entry that was restored. A failed thermostat keeps its entry for a retry.
+
+## Deliberately not used
+
+- `textCommand` (free-text "Alexa, …"): it can make purchases and unlock doors.
+- Unlock (`unlockAction`): reducing security stays manual.

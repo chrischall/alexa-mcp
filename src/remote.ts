@@ -39,6 +39,19 @@ export interface RemoteSession {
   readonly devices: () => RawDevice[];
   /** Invoke a callback-style library method; resolves with its body. */
   call<T = unknown>(method: string, ...args: unknown[]): Promise<T>;
+  /**
+   * `createNotificationObject` — the library's one SYNCHRONOUS builder (no
+   * callback, no network). Returns the object `createNotification` sends, or
+   * null when the serial is unknown to the session. Alarms come back in the
+   * new `{ trigger, extensions }` shape; reminders and timers in the old one.
+   */
+  notificationObject(
+    serial: string,
+    type: 'Reminder' | 'Alarm' | 'Timer',
+    label: string | null,
+    value: number,
+    status: 'ON' | 'OFF',
+  ): Record<string, unknown> | null;
   /** Tear down (clears library timers). */
   stop(): void;
 }
@@ -117,6 +130,15 @@ export const createAlexaRemote: RemoteFactory = (init) =>
               }
               fn.call(remote, ...args, (e: unknown, body: T) => (e ? rej(toError(e)) : res(body)));
             }),
+          notificationObject: (serial, type, label, value, status) =>
+            (lib.createNotificationObject as unknown as (...a: unknown[]) => Record<string, unknown> | null).call(
+              remote,
+              serial,
+              type,
+              label,
+              value,
+              status,
+            ),
           stop: () => remote.stop(),
         });
       },

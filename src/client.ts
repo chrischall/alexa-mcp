@@ -47,6 +47,39 @@ const AUTH_FAILURE = /\b401\b|unauthori[sz]ed|not authenticated|no csrf|authenti
 
 export type SmartHomeEntityType = 'APPLIANCE' | 'GROUP';
 export type PlaybackCommand = 'play' | 'pause' | 'next' | 'previous';
+export type AlertType = 'Reminder' | 'Alarm' | 'Timer';
+
+/** `sendSequenceCommand` commands this server sends with a null value (built-ins, Fire TV, stop). */
+export type ValuelessSequenceCommand =
+  | 'weather'
+  | 'traffic'
+  | 'flashbriefing'
+  | 'goodmorning'
+  | 'funfact'
+  | 'joke'
+  | 'cleanup'
+  | 'singasong'
+  | 'tellstory'
+  | 'calendarToday'
+  | 'calendarTomorrow'
+  | 'calendarNext'
+  | 'fireTVTurnOn'
+  | 'fireTVTurnOff'
+  | 'fireTVPauseVideo'
+  | 'fireTVResumeVideo'
+  | 'fireTVNavigateHome'
+  | 'deviceStop'
+  | 'deviceStopAll';
+
+export interface CreateAlertOptions {
+  serial: string;
+  type: AlertType;
+  label: string | null;
+  /** Epoch ms of when it fires (for a timer: when it ends). */
+  timeMs: number;
+  /** Adjust the library-built object before it is sent (wall-clock fields, timer duration). */
+  edit?: (notification: Record<string, unknown>) => Record<string, unknown>;
+}
 
 export interface AlexaClientOptions {
   env?: Env;
@@ -270,6 +303,40 @@ export class AlexaClient {
     return this.call('getNotifications', false);
   }
 
+  /** `getSmarthomeDevicesV2` — endpoints carrying `legacyAppliance { applianceId, entityId }` and `displayCategories`. */
+  listSmartHomeEndpoints(): Promise<Record<string, unknown>[]> {
+    return this.call('getSmarthomeDevicesV2');
+  }
+
+  /**
+   * `querySmarthomeDevices` — takes APPLIANCE ids (not entity ids). Answers
+   * `{ deviceStates: [{ entity, capabilityStates[] }], errors: [{ code, entity }] }`.
+   * Verified live 2026-10-08.
+   */
+  querySmartHomeState(applianceIds: string[]): Promise<{ deviceStates?: Record<string, unknown>[]; errors?: Record<string, unknown>[] }> {
+    return this.call('querySmarthomeDevices', applianceIds, 'APPLIANCE');
+  }
+
+  getDoNotDisturb(): Promise<{ doNotDisturbDeviceStatusList?: Record<string, unknown>[] }> {
+    return this.call('getDoNotDisturb');
+  }
+
+  getEqualizer(serial: string): Promise<{ bass?: number; mid?: number; treble?: number }> {
+    return this.call('getEqualizerSettings', serial);
+  }
+
+  getBluetooth(): Promise<{ bluetoothStates?: Record<string, unknown>[] }> {
+    return this.call('getBluetooth', false);
+  }
+
+  /** The device's IANA time zone, from the device preferences the library loads at init. Undefined when unknown. */
+  async deviceTimeZone(serial: string): Promise<string | undefined> {
+    const session = await this.ensure();
+    const dev = session.devices().find((d) => d.serialNumber === serial);
+    const tz = (dev?.preferences as { timeZoneId?: unknown } | undefined)?.timeZoneId;
+    return typeof tz === 'string' && tz !== '' ? tz : undefined;
+  }
+
   // ------------------------------------------------------------ commands
 
   speak(serial: string, text: string, kind: 'speak' | 'announcement'): Promise<unknown> {
@@ -318,6 +385,60 @@ export class AlexaClient {
       });
     }
     return body;
+  }
+
+  setDoNotDisturb(serial: string, enabled: boolean): Promise<unknown> {
+    return this.call('setDoNotDisturb', serial, enabled);
+  }
+
+  setEqualizer(serial: string, bass: number, mid: number, treble: number): Promise<unknown> {
+    return this.call('setEqualizerSettings', serial, bass, mid, treble);
+  }
+
+  /** A value-less sequence command (built-ins, Fire TV, stop). Audible or visible in the room. */
+  sequence(serial: string, command: ValuelessSequenceCommand): Promise<unknown> {
+    return this.call('sendSequenceCommand', serial, command, null);
+  }
+
+  /**
+   * Build a reminder/alarm/timer with the library's synchronous
+   * `createNotificationObject`, then `createNotification` it. Amazon answers
+   * the created notification; an answer without an `id` means nothing was
+   * created (a Fire TV answered "no JSON" to a reminder, live 2026-10-08).
+   */
+  async createAlert(opts: CreateAlertOptions): Promise<Record<string, unknown> & { id: string }> {
+    const session = await this.ensure();
+    const built = session.notificationObject(opts.serial, opts.type, opts.label, opts.timeMs, 'ON');
+    if (!built) {
+      throw new McpToolError(`The Alexa session does not know device ${opts.serial}.`, {
+        hint: 'alexa_list_devices shows the devices on the account.',
+      });
+    }
+    const notification = opts.edit ? opts.edit(built) : built;
+    const body = await this.call<Record<string, unknown> | null>('createNotification', notification);
+    const id = body?.id;
+    if (typeof id !== 'string' || id === '') {
+      const kind = opts.type === 'Reminder' ? 'reminders' : 'alarms and timers';
+      throw new McpToolError(`Alexa did not create the ${opts.type.toLowerCase()} (no id in the answer).`, {
+        hint:
+          `This device may not support ${kind} (Fire TVs refuse reminders). Check alexa_list_alarms_reminders ` +
+          'before retrying, in case it was created anyway.',
+      });
+    }
+    return { ...body, id } as Record<string, unknown> & { id: string };
+  }
+
+  /** `deleteNotification` needs the whole notification object (with its `id`), as `getNotifications` lists it. */
+  deleteNotification(notification: Record<string, unknown>): Promise<unknown> {
+    return this.call('deleteNotification', notification);
+  }
+
+  /**
+   * `updateListItem` — the library refuses without `value` (the item name) and
+   * `version`; `completed` maps to itemStatus COMPLETE/ACTIVE.
+   */
+  updateListItem(listId: string, itemId: string, options: { value: string; completed: boolean; version: number }): Promise<unknown> {
+    return this.call('updateListItem', listId, itemId, options);
   }
 
   addListItem(listId: string, value: string): Promise<unknown> {
