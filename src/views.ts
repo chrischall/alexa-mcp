@@ -46,8 +46,10 @@ export type SmartHomeAction = (typeof SMART_HOME_ACTIONS)[number];
 
 /**
  * supportedOperations → the action name this server offers for it, in display
- * order. Anything not here (unlockAction, rampBrightness, vendor modes) is not
- * offered. Unlocking stays out deliberately: it reduces security.
+ * order. Anything not here (rampBrightness, vendor-specific operations) is not
+ * offered. lockAction / unlockAction are offered through alexa_lock, and garage
+ * doors through alexa_garage_door — both destructive and confirm-gated, because
+ * unlocking or opening reduces security; alexa_control_smart_home never sends them.
  */
 const OFFERED_ACTIONS: [operation: string, action: string][] = [
   ['turnOn', 'turnOn'],
