@@ -81,3 +81,7 @@ egress:
     # list item API (alexashoppinglists lives on www.<amazonPage>).
     - api.amazon.com
     - www.amazon.com
+    # Alarms (alexa_create_reminder type Alarm, and cancelling one) go to the
+    # "alexaApiUrl" from the same endpoint document — api.amazonalexa.com for a
+    # US account — through alexa-remote2's httpsGetAuthApi.
+    - api.amazonalexa.com

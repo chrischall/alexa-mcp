@@ -79,4 +79,11 @@ describe('packaging', () => {
     expect(mint).not.toMatch(/name: ALEXA_PASSWORD|name: ALEXA_EMAIL/);
     expect(mint).toMatch(/dataDir:\s*true/);
   });
+
+  it('mint.yaml egress covers the alarms API host as well as the web API', () => {
+    const mint = readFileSync(join(ROOT, 'mint.yaml'), 'utf8');
+    for (const host of ['alexa.amazon.com', 'na-api-alexa.amazon.com', 'api.amazon.com', 'www.amazon.com', 'api.amazonalexa.com']) {
+      expect(mint, host).toMatch(new RegExp(`- ${host.replace(/\./g, '\\.')}\\n`));
+    }
+  });
 });
