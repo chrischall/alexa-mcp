@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/chrischall/alexa-mcp/compare/v0.1.0...v0.2.0) (2026-10-08)
+
+
+### Features
+
+* **login:** sign in to Amazon in your own browser ([#5](https://github.com/chrischall/alexa-mcp/issues/5)) ([065794d](https://github.com/chrischall/alexa-mcp/commit/065794d99d8d1632c4fa3f90436f157ee0e3e9aa))
+
 ## 0.1.0 (2026-10-07)
 
 

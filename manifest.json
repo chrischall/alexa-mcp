@@ -3,8 +3,8 @@
   "manifest_version": "0.3",
   "name": "alexa-mcp",
   "display_name": "Amazon Alexa",
-  "version": "0.1.0",
-  "description": "Amazon Alexa for Claude \u2014 Echo devices, announcements, routines, smart home, lists and alarms via natural language",
+  "version": "0.2.0",
+  "description": "Amazon Alexa for Claude — Echo devices, announcements, routines, smart home, lists and alarms via natural language",
   "author": {
     "name": "Chris Hall",
     "email": "chris.c.hall@gmail.com",
@@ -53,11 +53,11 @@
     },
     {
       "name": "alexa_session_status",
-      "description": "Report how the server is configured \u2014 registration source, Amazon site, cookie age (no network)"
+      "description": "Report how the server is configured — registration source, Amazon site, cookie age (no network)"
     },
     {
       "name": "alexa_begin_login",
-      "description": "Start signing in to Amazon \u2014 returns a link to open in your own browser"
+      "description": "Start signing in to Amazon — returns a link to open in your own browser"
     },
     {
       "name": "alexa_finish_login",
