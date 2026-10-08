@@ -1,6 +1,6 @@
 {
   "name": "@chrischall/alexa-mcp",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "mcpName": "io.github.chrischall/alexa-mcp",
   "description": "Amazon Alexa MCP server for Claude — Echo devices, routines, smart home, lists and announcements — developed and maintained by AI",
   "author": "Claude Code (AI) <https://www.anthropic.com/claude>",
