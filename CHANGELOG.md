@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/chrischall/alexa-mcp/compare/v0.3.0...v0.3.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **mint:** allow the alarms API host in egress ([#12](https://github.com/chrischall/alexa-mcp/issues/12)) ([d894266](https://github.com/chrischall/alexa-mcp/commit/d8942663b7eb683a53c57585b06a374fa7fb6552))
+
 ## [0.3.0](https://github.com/chrischall/alexa-mcp/compare/v0.2.0...v0.3.0) (2026-10-08)
 
 
