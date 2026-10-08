@@ -1,10 +1,10 @@
 /**
- * The Alexa "registration" — the object `alexa-cookie2` returns from its proxy
- * login: a refresh token for a virtual Alexa-app device, that device's serial,
- * the `macDms` signing key, and the current session cookies.
+ * The Alexa "registration": a refresh token for a virtual Alexa-app device,
+ * that device's serial, the `macDms` signing key, and the current session
+ * cookies — the shape alexa-cookie2/alexa-remote2 use.
  *
- * It is the ONLY credential this server has. The proxy login (`alexa-mcp
- * login`) happens once, by a human, in a browser; after that the refresh token
+ * It is the ONLY credential this server has. The browser sign-in
+ * (browser-login.ts) happens once, by a human; after that the refresh token
  * mints fresh cookies server-side with no browser and no MFA. Cookies last ~14
  * days and are refreshed well before then, and every refresh produces an
  * updated registration that must be persisted — otherwise the next cold start
@@ -12,13 +12,13 @@
  *
  * Two sources, in this precedence:
  *   1. the state file `$ALEXA_STATE_DIR/registration.json` (default
- *      `~/.alexa-mcp/`), written by `alexa-mcp login` and by every refresh —
+ *      `~/.alexa-mcp/`), written by every sign-in and every refresh —
  *      but only when it belongs to the SAME virtual device as (1b) and is at
  *      least as new;
  *   1b. `ALEXA_REGISTRATION` — the registration JSON (or base64 of it), the
- *      seed for a hosted deployment where no one can run the login.
+ *      seed for a deployment configured from an exported registration.
  * A state file for a different device loses to the env var: that is what a
- * fresh `alexa-mcp login` pasted into the env looks like.
+ * fresh registration pasted into the env looks like.
  */
 
 import { readFileSync } from 'node:fs';
@@ -48,9 +48,9 @@ export interface LoadedRegistration {
 }
 
 export const LOGIN_HINT =
-  'Run `npx @chrischall/alexa-mcp login` on a computer with a browser, sign in to Amazon through the ' +
-  'local page it opens, then either keep the saved state file or paste the printed registration into ' +
-  'ALEXA_REGISTRATION.';
+  'Sign in with alexa_begin_login → alexa_finish_login (or the connector sign-in, or `npx @chrischall/alexa-mcp ' +
+  'login` in a terminal): you open an amazon.com link in your own browser, sign in, and paste back the address ' +
+  'of the page you land on.';
 
 /** Parse a registration from JSON or base64-encoded JSON. Errors name the source, never the content. */
 export function parseRegistration(raw: string, source: string): Registration {

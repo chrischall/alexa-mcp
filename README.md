@@ -8,15 +8,13 @@ It talks to Amazon's **private** Alexa web API — the one the Alexa app uses �
 
 ## Sign in once
 
-```sh
-npx @chrischall/alexa-mcp login            # add --print for a hosted connector
-```
+You sign in to Amazon **in your own browser**; this server never sees your password.
 
-It opens a local page at `http://127.0.0.1:3456/` that fronts Amazon's real sign-in. Use a desktop browser **without** the Alexa app installed, and complete whatever Amazon asks (password, 2FA, captcha). The login registers a virtual Alexa-app device named **alexa-mcp** on your account and saves its registration — a refresh token plus session cookies — to `~/.alexa-mcp/registration.json` (mode 0600).
+- **In a chat:** ask Claude to sign in to Alexa. It calls `alexa_begin_login` and gives you an amazon.com link. Sign in there (password, two-step code, whatever Amazon asks), and you land on a blank `www.amazon.com/ap/maplanding` page. Paste that page's address back and Claude calls `alexa_finish_login`.
+- **Hosted connector:** the sign-in page shows a **Sign in to Amazon** button and a box for that same address.
+- **Terminal:** `npx @chrischall/alexa-mcp login` prints the link and reads the pasted address (`--print` also writes the registration as one base64 line for `ALEXA_REGISTRATION`; treat it as a credential).
 
-After that no browser is needed: cookies are re-minted from the refresh token every few days and the refreshed registration is written back to the same file. To revoke access, remove the **alexa-mcp** device from your Amazon account (Manage Your Content and Devices → Devices).
-
-`--print` also writes the registration to stdout as one base64 line. It is a credential — paste it only into `ALEXA_REGISTRATION` (e.g. a hosted connector's sign-in form), never into a chat.
+Under the hood this is the Alexa iOS app's OAuth sign-in with PKCE. The link carries only a challenge, the matching secret stays on the server, and the code in the pasted address is single-use and expires in minutes. Finishing registers a virtual device named **alexa-mcp** on your account and saves the registration (refresh token plus session cookies) to `~/.alexa-mcp/registration.json` (mode 0600). After that no browser is needed: cookies are re-minted from the refresh token every few days. To revoke access, remove the **alexa-mcp** device from your Amazon account (Manage Your Content and Devices → Devices).
 
 ## Tools
 
@@ -35,6 +33,7 @@ After that no browser is needed: cookies are re-minted from the refresh token ev
 | `alexa_run_routine` ✋ | Run a routine now |
 | `alexa_control_smart_home` ✋ | turnOn / turnOff / setBrightness / sceneActivate (no locks, garage doors or thermostats) |
 | `alexa_add_list_item` ✋ / `alexa_remove_list_item` ✋ | Edit a list |
+| `alexa_begin_login` / `alexa_finish_login` | Browser sign-in (see above) |
 | `alexa_session_status` | Configuration, no network |
 | `alexa_healthcheck` | Does Amazon still accept the session? |
 
@@ -45,7 +44,7 @@ After that no browser is needed: cookies are re-minted from the refresh token ev
 | Variable | Default | Purpose |
 |---|---|---|
 | `ALEXA_REGISTRATION` | — | Registration JSON, or the base64 line from `login --print`. Optional when the state file exists. |
-| `ALEXA_STATE_DIR` | `~/.alexa-mcp` | Where `registration.json` (and the login proxy's temp device file) live. |
+| `ALEXA_STATE_DIR` | `~/.alexa-mcp` | Where `registration.json` and pending sign-ins live. |
 | `ALEXA_AMAZON_PAGE` | `amazon.com` | Amazon site of the account (or what the registration recorded). |
 | `ALEXA_ACCEPT_LANGUAGE` | `en-US` | Accept-Language sent to Amazon. |
 | `MCP_CONFIRM_MODE` | `ask-user` | `ask-user` / `auto` / `refuse` — whether the model must get your approval in chat before using a `confirmToken`. |
@@ -55,7 +54,7 @@ When both `ALEXA_REGISTRATION` and the state file are present, the state file wi
 
 ## Hosting
 
-`mint.yaml` describes the server to [mcp-host](https://github.com/chrischall/mcp-host): one child per user (`identity.perUserChild`), each user pastes their own `ALEXA_REGISTRATION` on the sign-in page, and the refreshed registration persists in the child's data dir.
+`mint.yaml` describes the server to [mcp-host](https://github.com/chrischall/mcp-host): one child per user (`identity.perUserChild`), a two-step `auth.flow` (begin → sign in on amazon.com → paste the address), and the registration persists in each user's data dir.
 
 ## Development
 

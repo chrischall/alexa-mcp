@@ -64,9 +64,19 @@ afterEach(() => {
   }
 });
 
+const REGISTER_OK = {
+  response: { success: { tokens: { bearer: { refresh_token: 'Atnr|new', access_token: 'Atna|new' }, mac_dms: { k: 1 }, website_cookies: [{ Name: 'at-main', Value: 'a' }] } } },
+};
+
 async function setup(handlers: Handlers = HANDLERS, registration: string | null = JSON.stringify(REGISTRATION)) {
   const remote = fakeRemote(handlers);
-  const client = new AlexaClient({ env: { HOME: dir, ALEXA_STATE_DIR: dir, ALEXA_REGISTRATION: registration ?? undefined }, factory: remote.factory, refresh: async (r) => r });
+  const fetchImpl = (async () => new Response(JSON.stringify(REGISTER_OK), { status: 200 })) as unknown as typeof fetch;
+  const client = new AlexaClient({
+    env: { HOME: dir, ALEXA_STATE_DIR: dir, ALEXA_REGISTRATION: registration ?? undefined },
+    factory: remote.factory,
+    refresh: async (r) => ({ ...r, csrf: 'c', localCookie: 'csrf=c' }),
+    fetchImpl,
+  });
   const harness = await createTestHarness((server) => {
     for (const register of TOOL_REGISTRARS) register(server, client);
   });
@@ -86,6 +96,8 @@ async function confirmed(harness: Awaited<ReturnType<typeof setup>>['harness'], 
 const EXPECTED_TOOLS = [
   'alexa_healthcheck',
   'alexa_session_status',
+  'alexa_begin_login',
+  'alexa_finish_login',
   'alexa_list_devices',
   'alexa_get_now_playing',
   'alexa_list_volumes',
@@ -103,6 +115,8 @@ const EXPECTED_TOOLS = [
   'alexa_list_alarms_reminders',
 ];
 
+const SIGN_IN_TOOLS = ['alexa_begin_login', 'alexa_finish_login'];
+
 describe('roster', () => {
   it('registers exactly the expected tools', async () => {
     const { harness } = await setup();
@@ -117,6 +131,10 @@ describe('roster', () => {
       const a = t.annotations ?? {};
       if (a.readOnlyHint) {
         expect(a.destructiveHint, `${t.name} is a read`).not.toBe(true);
+      } else if (SIGN_IN_TOOLS.includes(t.name)) {
+        // Not gated: begin changes nothing remote, and finish needs a one-time code that only exists because
+        // the person just signed in to Amazon themselves — that sign-in is the consent.
+        expect(a.destructiveHint, t.name).toBe(false);
       } else {
         expect(typeof a.destructiveHint, `${t.name} must set destructiveHint`).toBe('boolean');
         expect(Object.keys((t.inputSchema as { properties?: object }).properties ?? {}), t.name).toContain('confirmToken');
@@ -224,6 +242,33 @@ describe('reads', () => {
     const { harness, remote } = await setup(HANDLERS, null);
     expect(parseToolResult(await harness.callTool('alexa_healthcheck'))).toMatchObject({ ok: false, error: { kind: 'no_credential' } });
     expect(remote.inits).toHaveLength(0);
+    await harness.close();
+  });
+});
+
+describe('browser sign-in', () => {
+  it('begin returns an amazon.com link; finish with the pasted address makes an unconfigured server work', async () => {
+    const { harness } = await setup(HANDLERS, null);
+    expect(parseToolResult(await harness.callTool('alexa_session_status'))).toMatchObject({ configured: false });
+    const begun = parseToolResult<{ loginId: string; signInUrl: string }>(await harness.callTool('alexa_begin_login'));
+    expect(new URL(begun.signInUrl).host).toBe('www.amazon.com');
+    const finished = await harness.callTool('alexa_finish_login', {
+      loginId: begun.loginId,
+      redirectUrl: 'https://www.amazon.com/ap/maplanding?openid.oa2.authorization_code=ANklqRAcZUpKpQgwHpJxVAQZ',
+    });
+    expect(finished.isError).toBeFalsy();
+    // The new sign-in is a NEW virtual device, so the fake list's old one is no longer hidden: all 4 count.
+    expect(parseToolResult(finished)).toMatchObject({ ok: true, devices: DEVICES.length });
+    expect(parseToolResult(await harness.callTool('alexa_session_status'))).toMatchObject({ configured: true, source: 'state-file' });
+    await harness.close();
+  });
+
+  it('finish refuses a non-Amazon address', async () => {
+    const { harness } = await setup(HANDLERS, null);
+    const { loginId } = parseToolResult<{ loginId: string }>(await harness.callTool('alexa_begin_login'));
+    const result = await harness.callTool('alexa_finish_login', { loginId, redirectUrl: 'https://evil.example/ap/maplanding?openid.oa2.authorization_code=ANklqRAcZUpKpQgw' });
+    expect(result.isError).toBe(true);
+    expect(text(result)).toMatch(/not Amazon/);
     await harness.close();
   });
 });

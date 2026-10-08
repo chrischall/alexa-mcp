@@ -3,24 +3,46 @@ name: Amazon Alexa
 slug: alexa
 summary: >-
   Echo devices, announcements, routines, smart-home control, shopping/to-do
-  lists and alarms through Amazon's Alexa web API. Each user pastes their own
-  registration from a one-time `alexa-mcp login`; every write is
-  confirmation-gated.
+  lists and alarms through Amazon's Alexa web API. Each user signs in to Amazon
+  in their own browser and pastes back the address they land on; every write
+  is confirmation-gated.
 identity:
   perUserChild: true
 auth:
-  fields:
-    - name: ALEXA_REGISTRATION
-      label: Alexa registration
-      type: password
-      # A standing credential for the person (a refresh token, not a passcode),
-      # so remember it across reconnects rather than asking every time.
-      persist: user
-      help: >-
-        Run `npx @chrischall/alexa-mcp login --print` on a computer with a
-        browser, sign in to Amazon on the page it opens, and paste the one line
-        it prints. Removing the "alexa-mcp" device in your Amazon account
-        revokes it.
+  flow:
+    steps:
+      - tool: alexa_begin_login
+        carry: [loginId, signInUrl]
+        title: Preparing your Amazon sign-in
+        description: >-
+          Creates a one-time amazon.com sign-in link for this connection. Nothing
+          is sent to Amazon yet.
+      - tool: alexa_finish_login
+        args:
+          loginId: { from: loginId }
+          redirectUrl: { from: redirectUrl }
+        # The sign-in link is minted per connection (PKCE), so it cannot be
+        # written into the description: the gateway renders it as a button,
+        # and only on the hosts listed here.
+        link:
+          from: signInUrl
+          hosts: [www.amazon.com]
+          label: Sign in to Amazon
+        prompt:
+          - name: redirectUrl
+            label: Address of the page you landed on
+            type: text
+            help: >-
+              After signing in, Amazon shows a blank www.amazon.com/ap/maplanding
+              page. Copy its full address from the address bar and paste it here.
+              The link works for 15 minutes and only once.
+        title: Sign in to Amazon
+        description: >-
+          Open the sign-in link and sign in to Amazon as you normally would
+          (password, two-step code, anything Amazon asks happens on amazon.com,
+          never here). Then paste back the address of the page you land on. This
+          adds an "alexa-mcp" device to your Amazon account; removing it there
+          revokes the connection.
 env:
   - name: ALEXA_AMAZON_PAGE
     required: false

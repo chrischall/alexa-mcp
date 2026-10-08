@@ -4,12 +4,11 @@ Everything goes through `alexa-remote2` 8.1.1 / `alexa-cookie2` 5.0.6. Shapes be
 
 ## Auth
 
-- `alexa-cookie2` proxy login → registration object with keys
-  `loginCookie, frc, map-md, deviceId, deviceAppName, deviceSerial, refreshToken, accessToken, tokenDate, macDms, amazonPage, localCookie, csrf, dataVersion`.
-  `tokenDate` is epoch **ms**, set on every login/refresh.
-- `refreshAlexaCookie({ formerRegistrationData })` mints new cookies from `refreshToken` with no browser and no MFA. Verified locally 2026-10-07: refresh then `getDevices` succeeded (15 devices).
-- Cookies last ~14 days; the library recommends refreshing after 5–13. This server refreshes after 4 days, before init.
-- Verified from a datacenter IP 2026-10-07: a Fly machine in `ewr` (egress 66.225.222.71) refreshed the cookie from the refresh token and then read all 15 devices. Amazon does not block the refresh from Fly, so hosting on mcp-host is viable.
+- **Sign-in (browser, PKCE)** — `browser-login.ts`. The link is `https://www.amazon.com/ap/signin?…` with the Alexa iOS app parameters (`assoc_handle=amzn_dp_project_dee_ios`, `openid.oa2.client_id=device:<deviceId>`, `scope=device_auth_access`, `response_type=code`, `code_challenge_method=S256`). After the user signs in, Amazon redirects to `https://www.amazon.com/ap/maplanding?…&openid.oa2.authorization_code=<code>`. `POST https://api.amazon.com/auth/register` with `auth_data { client_id: deviceId, authorization_code, code_verifier, code_algorithm: SHA-256, client_domain: DeviceLegacy }` returns `response.success.tokens { bearer { refresh_token, access_token }, mac_dms, website_cookies[] }`. Verified live 2026-10-07 from a phone sign-in: register HTTP 200, 5 website cookies.
+- **Completion** — alexa-cookie2 `refreshAlexaCookie({ formerRegistrationData })` needs a non-empty `loginCookie` (built from `website_cookies`) plus `refreshToken`; it mints `localCookie` + `csrf`. Then `getDevices` succeeded (14 devices).
+- **Registration keys** — `deviceId, deviceSerial, deviceAppName, frc, map-md, refreshToken, accessToken, macDms, amazonPage, tokenDate, loginCookie, localCookie, csrf, dataVersion`. `tokenDate` is epoch **ms**.
+- `refreshAlexaCookie` re-mints cookies from the refresh token with no browser and no MFA. Cookies last ~14 days; this server refreshes after 4. Verified from a datacenter IP 2026-10-07: a Fly machine in `ewr` (egress 66.225.222.71) refreshed and then read all 15 devices.
+- A code is single-use and expires in minutes. Save the token seed the moment `/auth/register` answers: an unsaved success still leaves a device on the account.
 
 ## Hosts contacted
 
