@@ -83,10 +83,23 @@ describe('loadRegistration / saveRegistration', () => {
     expect(loaded?.registration.loginCookie).toBe('newer');
   });
 
-  it('ignores a state file for a DIFFERENT device — a re-login in the env var wins', async () => {
-    env.ALEXA_REGISTRATION = JSON.stringify({ ...REG, deviceSerial: 'serial-2' });
-    await saveRegistration(registrationStatePath(env), { ...REG, tokenDate: 9999 });
+  it('newer tokenDate wins regardless of device: a re-login saved to the state file beats an older env seed', async () => {
+    // alexa_finish_login registered a NEW device and wrote the state file; the env still holds the old seed.
+    env.ALEXA_REGISTRATION = JSON.stringify({ ...REG, tokenDate: 1000 });
+    await saveRegistration(registrationStatePath(env), { ...REG, deviceSerial: 'serial-2', tokenDate: 9999 });
+    expect(loadRegistration(env)).toMatchObject({ source: 'state-file', registration: { deviceSerial: 'serial-2' } });
+  });
+
+  it('newer tokenDate wins regardless of device: a freshly pasted env registration beats an older state file', async () => {
+    env.ALEXA_REGISTRATION = JSON.stringify({ ...REG, deviceSerial: 'serial-2', tokenDate: 9999 });
+    await saveRegistration(registrationStatePath(env), { ...REG, tokenDate: 1000 });
     expect(loadRegistration(env)).toMatchObject({ source: 'env', registration: { deviceSerial: 'serial-2' } });
+  });
+
+  it('an older state file for the same device loses to the env seed', async () => {
+    env.ALEXA_REGISTRATION = JSON.stringify({ ...REG, tokenDate: 5000, loginCookie: 'env' });
+    await saveRegistration(registrationStatePath(env), { ...REG, tokenDate: 4000, loginCookie: 'file' });
+    expect(loadRegistration(env)).toMatchObject({ source: 'env', registration: { loginCookie: 'env' } });
   });
 
   it('treats a corrupt state file as absent rather than failing boot', () => {

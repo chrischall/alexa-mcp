@@ -97,11 +97,11 @@
     },
     {
       "name": "alexa_list_smart_home",
-      "description": "List smart-home devices, groups and scenes Alexa controls"
+      "description": "List thermostats, lights, plugs, locks, garage doors and scenes Alexa controls"
     },
     {
       "name": "alexa_control_smart_home",
-      "description": "Turn a smart-home device on/off, set brightness or activate a scene (asks you to confirm first)"
+      "description": "Turn a smart-home device on/off, set brightness or colour, or activate a scene (asks you to confirm first)"
     },
     {
       "name": "alexa_list_lists",
@@ -122,6 +122,82 @@
     {
       "name": "alexa_list_alarms_reminders",
       "description": "List alarms, timers and reminders on Alexa devices"
+    },
+    {
+      "name": "alexa_get_smart_home_state",
+      "description": "Read thermostat temperature and setpoints, light and plug state, locks and sensors"
+    },
+    {
+      "name": "alexa_set_thermostat",
+      "description": "Set a thermostat temperature or mode (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_set_vacation_mode",
+      "description": "Turn thermostat vacation (away) mode on or off — saves and restores settings (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_get_do_not_disturb",
+      "description": "Which Alexa devices have Do Not Disturb on"
+    },
+    {
+      "name": "alexa_set_do_not_disturb",
+      "description": "Turn Do Not Disturb on or off for a device (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_get_equalizer",
+      "description": "Read an Echo speaker’s bass, mid and treble"
+    },
+    {
+      "name": "alexa_set_equalizer",
+      "description": "Set an Echo speaker’s bass, mid and treble (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_create_reminder",
+      "description": "Set a reminder or alarm on an Echo device (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_create_timer",
+      "description": "Start a countdown timer on an Echo device (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_cancel_alarm_reminder",
+      "description": "Delete an alarm, timer or reminder (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_list_bluetooth",
+      "description": "Bluetooth devices paired with each Alexa device"
+    },
+    {
+      "name": "alexa_run_builtin",
+      "description": "Play weather, news, a joke, calendar and other built-ins out loud (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_fire_tv",
+      "description": "Turn a Fire TV on/off, pause, resume or go home (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_stop",
+      "description": "Stop music, alarms or speech on one or every device (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_update_list_item",
+      "description": "Check off or un-check an Alexa list item (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_list_device_modes",
+      "description": "List a device’s mode settings (fan mode, vacuum mode) and their values"
+    },
+    {
+      "name": "alexa_set_device_mode",
+      "description": "Change a device mode such as thermostat fan mode (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_garage_door",
+      "description": "Open or close a garage door (asks you to confirm first)"
+    },
+    {
+      "name": "alexa_lock",
+      "description": "Lock or unlock a smart lock (asks you to confirm first)"
     }
   ],
   "compatibility": {

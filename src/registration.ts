@@ -10,15 +10,16 @@
  * updated registration that must be persisted — otherwise the next cold start
  * goes back to the stale cookie.
  *
- * Two sources, in this precedence:
- *   1. the state file `$ALEXA_STATE_DIR/registration.json` (default
- *      `~/.alexa-mcp/`), written by every sign-in and every refresh —
- *      but only when it belongs to the SAME virtual device as (1b) and is at
- *      least as new;
- *   1b. `ALEXA_REGISTRATION` — the registration JSON (or base64 of it), the
- *      seed for a deployment configured from an exported registration.
- * A state file for a different device loses to the env var: that is what a
- * fresh registration pasted into the env looks like.
+ * Two sources:
+ *   - the state file `$ALEXA_STATE_DIR/registration.json` (default
+ *     `~/.alexa-mcp/`), written by every sign-in and every refresh;
+ *   - `ALEXA_REGISTRATION` — the registration JSON (or base64 of it), the
+ *     seed for a deployment configured from an exported registration.
+ * When both are present, the one with the newer `tokenDate` wins, whatever
+ * device each belongs to (a tie goes to the state file, the refreshed copy).
+ * A re-login through alexa_finish_login registers a NEW device and writes the
+ * state file, so it must beat an older env seed after a restart; a freshly
+ * pasted env registration is newer than the old state file, so it wins too.
  */
 
 import { readFileSync } from 'node:fs';
@@ -97,9 +98,7 @@ export function loadRegistration(env: Env = process.env): LoadedRegistration | n
   const fromFile = readStateFile(registrationStatePath(env));
 
   if (fromEnv && fromFile) {
-    const sameDevice = fromFile.deviceSerial === fromEnv.deviceSerial;
-    const atLeastAsNew = (fromFile.tokenDate ?? 0) >= (fromEnv.tokenDate ?? 0);
-    return sameDevice && atLeastAsNew
+    return (fromFile.tokenDate ?? 0) >= (fromEnv.tokenDate ?? 0)
       ? { registration: fromFile, source: 'state-file' }
       : { registration: fromEnv, source: 'env' };
   }

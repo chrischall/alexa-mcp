@@ -21,7 +21,8 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
     {
       description:
         'List the Echo speakers, Echo Shows, Fire TVs and other Alexa devices on the Amazon account, with name, serial, ' +
-        'device family and whether each is online. Use the name or serial with the other alexa_ tools.',
+        'device family and whether each is online. Use the name or serial with the other alexa_ tools. Thermostats, ' +
+        'lights, plugs, switches, locks and other smart-home devices are NOT here: use alexa_list_smart_home for those.',
       annotations: toolAnnotations({ readOnly: true }),
       inputSchema: z.object({ view: viewParam(VIEWS) }),
     },
