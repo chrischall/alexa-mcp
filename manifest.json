@@ -3,7 +3,7 @@
   "manifest_version": "0.3",
   "name": "alexa-mcp",
   "display_name": "Amazon Alexa",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Amazon Alexa for Claude — Echo devices, announcements, routines, smart home, lists and alarms via natural language",
   "author": {
     "name": "Chris Hall",

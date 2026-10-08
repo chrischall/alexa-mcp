@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/chrischall/alexa-mcp/compare/v0.2.0...v0.3.0) (2026-10-08)
+
+
+### Features
+
+* thermostats, vacation mode, locks, garage doors, device modes and more tools ([#8](https://github.com/chrischall/alexa-mcp/issues/8)) ([c0f0144](https://github.com/chrischall/alexa-mcp/commit/c0f01448a840e2948198edce39944bbeaadb4da5))
+
+
+### Documentation
+
+* **views:** the actions comment names alexa_lock and alexa_garage_door ([#11](https://github.com/chrischall/alexa-mcp/issues/11)) ([0f2ae50](https://github.com/chrischall/alexa-mcp/commit/0f2ae50fc44ea7603f157345c92ec3d013177310))
+
 ## [0.2.0](https://github.com/chrischall/alexa-mcp/compare/v0.1.0...v0.2.0) (2026-10-08)
 
 
