@@ -12,7 +12,7 @@ export function registerSessionTools(server: McpServer, client: AlexaClient): vo
         'Report how this Alexa server is configured — whether a registration is present, where it came from, the ' +
         'Amazon site, and how old the session cookies are. Makes NO network call; alexa_healthcheck checks that ' +
         'Amazon still accepts the session.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: false }),
       inputSchema: z.object({}),
     },
     async () => {

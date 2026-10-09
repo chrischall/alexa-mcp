@@ -90,7 +90,7 @@ export function registerVacationTools(server: McpServer, client: AlexaClient): v
         'a thermostat that is OFF stays OFF. Turning it OFF restores exactly what was saved. Defaults to every ' +
         'thermostat. Turning it on twice is refused so the saved settings are never lost.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: false }),
+      annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
       inputSchema: z.object({
         enabled: z.boolean().describe('true turns vacation mode on; false restores the saved settings.'),
         targets: z.array(z.string().min(1)).min(1).max(20).optional().describe('Thermostat names (or ids). Default: all thermostats.'),

@@ -31,7 +31,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
     'alexa_get_do_not_disturb',
     {
       description: 'Which Alexa devices have Do Not Disturb (DND, quiet mode) switched on right now.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({}),
     },
     async () => {
@@ -47,7 +47,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
     'alexa_set_do_not_disturb',
     {
       description: 'Switch Do Not Disturb (DND, quiet mode) on or off for an Alexa device.' + WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
       inputSchema: z.object({
         device: deviceArg,
         enabled: z.boolean().describe('true turns Do Not Disturb on, false turns it off.'),
@@ -75,7 +75,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
     'alexa_get_equalizer',
     {
       description: 'Read an Echo speaker or soundbar’s equalizer: bass, mid(range) and treble, in dB.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({ device: deviceArg }),
     },
     async ({ device }) => {
@@ -93,7 +93,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
         'Set an Echo speaker or soundbar’s equalizer — bass, mid and/or treble, −6 to +6 dB. Bands you leave out ' +
         'keep their current value.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
       inputSchema: z.object({
         device: deviceArg,
         bass: band.optional().describe('Bass, −6 to +6.'),
@@ -132,7 +132,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
         'List the Bluetooth phones, speakers and headphones paired with each Alexa device, which are connected, and ' +
         'whether the Echo is streaming over Bluetooth. ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({}),
     },
     async () => {

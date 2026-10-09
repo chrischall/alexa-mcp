@@ -16,7 +16,7 @@ export function registerSpeechTools(server: McpServer, client: AlexaClient): voi
         '"announce" plays it as an announcement (chime first) on one or more devices at once. Everyone in the ' +
         'room hears it, so it cannot be taken back.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
       inputSchema: z.object({
         devices: z
           .array(deviceArg)

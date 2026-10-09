@@ -41,7 +41,7 @@ export function registerActionTools(server: McpServer, client: AlexaClient): voi
         'briefing (news), the good-morning greeting, a fun fact, a joke, sing a song, tell a story, today’s / ' +
         'tomorrow’s / the next calendar event, or "cleanup" (tidy-up music). Everyone in the room hears it.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
       inputSchema: z.object({
         device: deviceArg,
         command: z.enum(BUILTINS).describe('Which built-in feature.'),
@@ -72,7 +72,7 @@ export function registerActionTools(server: McpServer, client: AlexaClient): voi
         'Control a Fire TV through Alexa: turn the TV on or off, pause or resume the video, or go to the home ' +
         'screen.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
       inputSchema: z.object({
         device: deviceArg,
         command: z.enum(['turnOn', 'turnOff', 'pause', 'resume', 'home']).describe('What to do.'),
@@ -106,7 +106,7 @@ export function registerActionTools(server: McpServer, client: AlexaClient): voi
         'Stop whatever an Alexa device is doing — music, a ringing alarm or timer, speech — like saying "Alexa, ' +
         'stop". Pass a device, or allDevices to stop every device on the account.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
       inputSchema: z.object({
         device: deviceArg.optional(),
         allDevices: z.boolean().optional().describe('Stop every Alexa device on the account.'),

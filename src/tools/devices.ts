@@ -23,7 +23,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
         'List the Echo speakers, Echo Shows, Fire TVs and other Alexa devices on the Amazon account, with name, serial, ' +
         'device family and whether each is online. Use the name or serial with the other alexa_ tools. Thermostats, ' +
         'lights, plugs, switches, locks and other smart-home devices are NOT here: use alexa_list_smart_home for those.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({ view: viewParam(VIEWS) }),
     },
     async ({ view }) => {
@@ -37,7 +37,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
     'alexa_get_now_playing',
     {
       description: 'What is playing on an Alexa device right now — media state, title, artist and provider, from its player.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({ device: deviceArg }),
     },
     async ({ device }) => {
@@ -65,7 +65,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
     'alexa_list_volumes',
     {
       description: 'Current speaker volume (0–100) and mute state of every Alexa device that reports one.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({}),
     },
     async () => {
@@ -81,7 +81,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
     'alexa_set_volume',
     {
       description: 'Set the speaker volume (0–100) of an Alexa device.' + WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
       inputSchema: z.object({
         device: deviceArg,
         volume: z.number().int().min(0).max(100).describe('Volume level, 0–100.'),
@@ -109,7 +109,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
     'alexa_playback',
     {
       description: 'Play, pause, skip to next or go back to previous on an Alexa device’s current media.' + WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: false }),
+      annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
       inputSchema: z.object({
         device: deviceArg,
         command: z.enum(['play', 'pause', 'next', 'previous']).describe('The media command.'),

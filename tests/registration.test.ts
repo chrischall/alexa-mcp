@@ -49,6 +49,13 @@ describe('registrationStatePath', () => {
   it('honours ALEXA_STATE_DIR', () => {
     expect(registrationStatePath({ HOME: '/home/u', ALEXA_STATE_DIR: '/data/alexa' })).toBe('/data/alexa/registration.json');
   });
+
+  it('treats an unfilled .mcpb placeholder as unset', () => {
+    // manifest.json passes ${user_config.alexa_state_dir}; a blank optional field can arrive verbatim.
+    expect(registrationStatePath({ HOME: '/home/u', ALEXA_STATE_DIR: '${user_config.alexa_state_dir}' })).toBe(
+      '/home/u/.alexa-mcp/registration.json',
+    );
+  });
 });
 
 describe('loadRegistration / saveRegistration', () => {
