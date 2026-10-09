@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,6 +30,15 @@ describe('packaging', () => {
     expect(server.command).toBe('npx');
     expect(server.args).toEqual(['-y', pkg.name]);
     expect(JSON.stringify(server)).not.toMatch(/dist\//);
+  });
+
+  it('plugin.json points Claude Code at the MCP config under mcpServers, the key it reads', () => {
+    // `mcp` is not a plugin.json field: Claude Code ignores it (`claude plugin validate`
+    // warns "Unknown field 'mcp'"), so a non-default path under it silently loads no server.
+    const plugin = read('.claude-plugin/plugin.json');
+    expect(plugin).not.toHaveProperty('mcp');
+    expect(plugin.mcpServers).toBe('./.mcp.json');
+    expect(existsSync(join(ROOT, plugin.mcpServers))).toBe(true);
   });
 
   it('the ESM bundle defines __dirname/__filename/require for the CommonJS Alexa libraries', () => {
