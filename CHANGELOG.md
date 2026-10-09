@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.2](https://github.com/chrischall/alexa-mcp/compare/v0.3.1...v0.3.2) (2026-10-09)
+
+
+### Bug Fixes
+
+* annotate tools truthfully and sync manifests with the served tools ([#16](https://github.com/chrischall/alexa-mcp/issues/16)) ([fc710dd](https://github.com/chrischall/alexa-mcp/commit/fc710ddb343d7aaf936231486c7a36f2ec8eb837))
+* declare the plugin MCP config under the mcpServers key Claude Code reads ([#17](https://github.com/chrischall/alexa-mcp/issues/17)) ([d15bdd8](https://github.com/chrischall/alexa-mcp/commit/d15bdd808c5bfbce1b18b28da1e6fcf03cbc530b))
+* **deps:** update @chrischall/mcp-utils to 3.0.0 ([#14](https://github.com/chrischall/alexa-mcp/issues/14)) ([b237e76](https://github.com/chrischall/alexa-mcp/commit/b237e7664d73a4f7939059d2d21f7c5a17ead195))
+
 ## [0.3.1](https://github.com/chrischall/alexa-mcp/compare/v0.3.0...v0.3.1) (2026-10-08)
 
 
