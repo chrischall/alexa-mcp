@@ -48,7 +48,7 @@
     "test:coverage": "npm run typecheck && vitest run --coverage"
   },
   "dependencies": {
-    "@chrischall/mcp-utils": "^2.15.1",
+    "@chrischall/mcp-utils": "^3.0.0",
     "@modelcontextprotocol/server": "^2.3.0",
     "alexa-cookie2": "^5.0.6",
     "alexa-remote2": "^8.1.1",
