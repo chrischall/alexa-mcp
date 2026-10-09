@@ -251,12 +251,31 @@ describe('roster', () => {
       } else if (SIGN_IN_TOOLS.includes(t.name)) {
         // Not gated: begin changes nothing remote, and finish needs a one-time code that only exists because
         // the person just signed in to Amazon themselves — that sign-in is the consent.
-        expect(a.destructiveHint, t.name).toBe(false);
+        expect(typeof a.destructiveHint, `${t.name} must set destructiveHint`).toBe('boolean');
       } else {
         expect(typeof a.destructiveHint, `${t.name} must set destructiveHint`).toBe('boolean');
         expect(Object.keys((t.inputSchema as { properties?: object }).properties ?? {}), t.name).toContain('confirmToken');
       }
     }
+    await harness.close();
+  });
+
+  it('sign-in: begin only mints a link (additive); finish spends a one-time code and registers a device nothing here removes (destructive)', async () => {
+    const { harness } = await setup();
+    const { tools } = await harness.client.listTools();
+    const hint = (n: string) => tools.find((t) => t.name === n)?.annotations ?? {};
+    expect(hint('alexa_begin_login').destructiveHint).toBe(false);
+    expect(hint('alexa_finish_login').destructiveHint).toBe(true);
+    await harness.close();
+  });
+
+  it('every tool sets an explicit openWorldHint; only the no-network tools say false', async () => {
+    const { harness } = await setup();
+    const { tools } = await harness.client.listTools();
+    for (const t of tools) expect(typeof t.annotations?.openWorldHint, `${t.name} must set openWorldHint`).toBe('boolean');
+    const local = tools.filter((t) => t.annotations?.openWorldHint === false).map((t) => t.name).sort();
+    // session_status reads local config only; begin_login mints the link and PKCE secret locally.
+    expect(local).toEqual(['alexa_begin_login', 'alexa_session_status']);
     await harness.close();
   });
 

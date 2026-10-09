@@ -25,7 +25,7 @@
 import { readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { McpToolError, writeFileSafe } from '@chrischall/mcp-utils';
+import { McpToolError, readEnvVar, writeFileSafe } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 
 export type Env = Record<string, string | undefined>;
@@ -71,7 +71,7 @@ export function parseRegistration(raw: string, source: string): Registration {
 }
 
 export function registrationStatePath(env: Env = process.env): string {
-  const dir = env.ALEXA_STATE_DIR?.trim() || join(env.HOME ?? '', '.alexa-mcp');
+  const dir = readEnvVar('ALEXA_STATE_DIR', { env }) ?? join(env.HOME ?? '', '.alexa-mcp');
   return join(dir, 'registration.json');
 }
 

@@ -88,7 +88,7 @@ export function registerModeTools(server: McpServer, client: AlexaClient): void 
         'List the mode settings of an Alexa smart-home device and what each is set to now, with the values it ' +
         'accepts: a thermostat’s fan mode (On / Auto / Circulate), a robot vacuum’s (Roomba) state, a light’s ' +
         'effect, washer or air-purifier modes. Use the setting and value names with alexa_set_device_mode.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({ target: z.string().min(1).describe('Device name (or id) from alexa_list_smart_home.') }),
     },
     async ({ target }) => {
@@ -114,7 +114,7 @@ export function registerModeTools(server: McpServer, client: AlexaClient): void 
         'when the device has several; `mode` is the value by name or id, as alexa_list_device_modes shows them. ' +
         'Garage doors are not changed here: use alexa_garage_door.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Device name (or id) from alexa_list_smart_home.'),
         mode: z.string().min(1).max(100).describe('The new value, by name ("Circulate") or value ("3").'),
@@ -169,7 +169,7 @@ export function registerModeTools(server: McpServer, client: AlexaClient): void 
         'Open or close a garage door connected to Alexa. Opening a garage door reduces your home’s security — ' +
         'anyone outside can walk in — so confirm the user really wants it open.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Garage door name (or id) from alexa_list_smart_home.'),
         action: z.enum(['open', 'close']).describe('open or close.'),
@@ -223,7 +223,7 @@ export function registerModeTools(server: McpServer, client: AlexaClient): void 
         'confirm the user really wants it unlocked. Amazon may require a voice PIN or the Alexa app to unlock; ' +
         'its refusal is reported as an error.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Lock name (or id) from alexa_list_smart_home.'),
         action: z.enum(['lock', 'unlock']).describe('lock or unlock.'),

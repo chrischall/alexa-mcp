@@ -40,7 +40,7 @@ export function registerRoutineTools(server: McpServer, client: AlexaClient): vo
       description:
         'List the Alexa routines on the account — name (or trigger phrase), id, whether enabled, and what triggers ' +
         'each (voice phrase, schedule, device event).',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({ view: viewParam(VIEWS) }),
     },
     async ({ view }) => {
@@ -57,7 +57,7 @@ export function registerRoutineTools(server: McpServer, client: AlexaClient): vo
         'Run an Alexa routine now, exactly as if its trigger fired. A routine can do anything it was built to — ' +
         'lights, locks, messages, purchases — so check what it does before running it.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
       inputSchema: z.object({
         routine: z.string().min(1).describe('Routine name, trigger phrase or id (from alexa_list_routines).'),
         device: z

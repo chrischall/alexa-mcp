@@ -29,6 +29,20 @@
           "isRequired": false,
           "format": "string",
           "isSecret": false
+        },
+        {
+          "name": "ALEXA_AMAZON_PAGE",
+          "description": "Amazon site of the account (or what the registration recorded); default amazon.com",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "ALEXA_ACCEPT_LANGUAGE",
+          "description": "Accept-Language sent to Amazon; default en-US",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
         }
       ]
     }

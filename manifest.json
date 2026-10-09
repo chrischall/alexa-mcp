@@ -33,7 +33,10 @@
         "${__dirname}/dist/bundle.js"
       ],
       "env": {
-        "ALEXA_REGISTRATION": "${user_config.alexa_registration}"
+        "ALEXA_REGISTRATION": "${user_config.alexa_registration}",
+        "ALEXA_STATE_DIR": "${user_config.alexa_state_dir}",
+        "ALEXA_AMAZON_PAGE": "${user_config.alexa_amazon_page}",
+        "ALEXA_ACCEPT_LANGUAGE": "${user_config.alexa_accept_language}"
       }
     }
   },
@@ -44,6 +47,24 @@
       "description": "Optional. Leave blank to use the state file written by `npx @chrischall/alexa-mcp login`. To set it here, run that command with --print and paste the line it prints.",
       "required": false,
       "sensitive": true
+    },
+    "alexa_state_dir": {
+      "type": "string",
+      "title": "State directory (optional)",
+      "description": "Where `registration.json` and pending sign-ins live. Default `~/.alexa-mcp`.",
+      "required": false
+    },
+    "alexa_amazon_page": {
+      "type": "string",
+      "title": "Amazon site (optional)",
+      "description": "Amazon site of the account (or what the registration recorded). Default `amazon.com`.",
+      "required": false
+    },
+    "alexa_accept_language": {
+      "type": "string",
+      "title": "Accept-Language (optional)",
+      "description": "Accept-Language sent to Amazon. Default `en-US`.",
+      "required": false
     }
   },
   "tools": [

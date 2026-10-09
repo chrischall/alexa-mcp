@@ -70,7 +70,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
         'List the alarms, timers and reminders set on the account’s Alexa devices, with id, label, device, ' +
         'date/time, whether each is on, and its recurrence. Optionally filter by type. ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({
         type: z.enum(['Alarm', 'Timer', 'Reminder']).optional().describe('Only this kind.'),
         includeOff: z.boolean().default(false).describe('Also return alarms/reminders that are switched off.'),
@@ -95,7 +95,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
         'either as `at`, ISO 8601 WITH a UTC offset (e.g. 2026-10-09T09:00:00-04:00), or as `inMinutes` from now. ' +
         'The time is applied in the device’s own time zone. Use alexa_create_timer for a countdown timer.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: false }),
+      annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
       inputSchema: z.object({
         device: deviceArg,
         type: z.enum(['Reminder', 'Alarm']).default('Reminder').describe('"Reminder" (default) or "Alarm".'),
@@ -148,7 +148,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
     'alexa_create_timer',
     {
       description: 'Start an Alexa countdown timer on an Echo device, e.g. a 10-minute pasta timer.' + WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: false }),
+      annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
       inputSchema: z.object({
         device: deviceArg,
         minutes: z.number().min(0.5).max(1440).describe('Duration in minutes (0.5–1440).'),
@@ -193,7 +193,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
         'label (plus the device when the same label is on several). A recurring alarm is deleted entirely, not ' +
         'just its next occurrence.' +
         WRITE_SUFFIX,
-      annotations: toolAnnotations({ readOnly: false, destructive: true }),
+      annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
       inputSchema: z.object({
         id: z.string().min(1).optional().describe('Notification id from alexa_list_alarms_reminders.'),
         label: z.string().min(1).optional().describe('Or: the reminder/timer label (case-insensitive).'),
