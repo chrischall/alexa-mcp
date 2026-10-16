@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.3](https://github.com/chrischall/alexa-mcp/compare/v0.3.2...v0.3.3) (2026-10-16)
+
+
+### Bug Fixes
+
+* **deps:** Bump the production-dependencies group with 2 updates ([#18](https://github.com/chrischall/alexa-mcp/issues/18)) ([6ddaea0](https://github.com/chrischall/alexa-mcp/commit/6ddaea0057977b1663f653b350ce5840365a2b60))
+* **login:** delete the registration seed copy once registration.json is saved ([#21](https://github.com/chrischall/alexa-mcp/issues/21)) ([c254ea6](https://github.com/chrischall/alexa-mcp/commit/c254ea6c75b9ef77aa0a314fd15f79da98938a8a))
+
 ## [0.3.2](https://github.com/chrischall/alexa-mcp/compare/v0.3.1...v0.3.2) (2026-10-09)
 
 
