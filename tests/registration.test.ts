@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -113,6 +113,25 @@ describe('loadRegistration / saveRegistration', () => {
     writeFileSync(registrationStatePath(env), '{nope');
     env.ALEXA_REGISTRATION = JSON.stringify(REG);
     expect(loadRegistration(env)?.source).toBe('env');
+  });
+
+  it('a malformed ALEXA_REGISTRATION does not hide a valid state file (fleet-audit#1204)', async () => {
+    await saveRegistration(registrationStatePath(env), { ...REG, deviceSerial: 'serial-2' });
+    env.ALEXA_REGISTRATION = 'eyJyZWZyZXNoX3Rva2'; // a truncated base64 paste
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      expect(loadRegistration(env)).toMatchObject({ source: 'state-file', registration: { deviceSerial: 'serial-2' } });
+      const logged = err.mock.calls.map((c) => String(c[0])).join('\n');
+      expect(logged).toContain('ALEXA_REGISTRATION');
+      expect(logged).not.toContain('eyJyZWZyZXNoX3Rva2');
+    } finally {
+      err.mockRestore();
+    }
+  });
+
+  it('a malformed ALEXA_REGISTRATION with no state file still fails with the env error', () => {
+    env.ALEXA_REGISTRATION = '{"not":"a registration"}';
+    expect(() => loadRegistration(env)).toThrow(/ALEXA_REGISTRATION is missing required registration fields/);
   });
 
   it('saves with 0600 permissions and overwrites a previous save', async () => {

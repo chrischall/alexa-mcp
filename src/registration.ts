@@ -94,8 +94,23 @@ function readStateFile(path: string): Registration | null {
 
 export function loadRegistration(env: Env = process.env): LoadedRegistration | null {
   const rawEnv = env.ALEXA_REGISTRATION?.trim();
-  const fromEnv = rawEnv ? parseRegistration(rawEnv, 'ALEXA_REGISTRATION') : null;
+  let fromEnv: Registration | null = null;
+  let envError: unknown;
+  if (rawEnv) {
+    try {
+      fromEnv = parseRegistration(rawEnv, 'ALEXA_REGISTRATION');
+    } catch (err) {
+      envError = err;
+    }
+  }
   const fromFile = readStateFile(registrationStatePath(env));
+  if (envError !== undefined) {
+    // A bad paste in the env field must not hide the refreshed state file that
+    // alexa_finish_login wrote (fleet-audit#1204). Only when neither source
+    // yields a registration is the env error the answer.
+    if (!fromFile) throw envError;
+    console.error('[alexa-mcp] Ignoring ALEXA_REGISTRATION: it is not a valid registration; using the saved state file.');
+  }
 
   if (fromEnv && fromFile) {
     return (fromFile.tokenDate ?? 0) >= (fromEnv.tokenDate ?? 0)
