@@ -33,7 +33,7 @@ export function registerSpeechTools(server: McpServer, client: AlexaClient): voi
           hint: 'Use mode "announce" to reach several devices at once.',
         });
       }
-      const resolved = await Promise.all(devices.map((d) => client.resolveDevice(d)));
+      const resolved = await client.resolveDevices(devices);
       const serials = [...new Set(resolved.map((d) => d.serialNumber))];
       const gate = await confirmWrite(ctx, {
         tool: 'alexa_speak',

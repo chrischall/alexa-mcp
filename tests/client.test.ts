@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AlexaClient, REFRESH_AFTER_MS } from '../src/client.js';
+import { AlexaClient, DEVICE_LIST_TTL_MS, REFRESH_AFTER_MS } from '../src/client.js';
 import { registrationStatePath, saveRegistration } from '../src/registration.js';
 import { DEVICES, REGISTRATION, fakeRemote } from './fakes.js';
 
@@ -283,5 +283,35 @@ describe('adoptRegistration (finishing a sign-in)', () => {
     await client.listDevices();
     expect(remote.inits).toHaveLength(2);
     expect(remote.session.stop).toHaveBeenCalled();
+  });
+});
+
+describe('device list reuse (fleet-audit#1206)', () => {
+  const fetches = (remote: ReturnType<typeof make>['remote']) => remote.calls.filter((c) => c.method === 'getDevices').length;
+  const devicesHandler = { getDevices: async () => ({ devices: DEVICES }) };
+
+  it('reuses one fetch within the window, and fetches again after it', async () => {
+    let now = 1_000_000;
+    const { client, remote } = make(devicesHandler, { now: () => now });
+    await client.resolveDevices(['G0001', 'G0002']);
+    await client.resolveDevice('Kitchen Echo');
+    expect(fetches(remote)).toBe(1);
+    now += DEVICE_LIST_TTL_MS;
+    await client.listDevices();
+    expect(fetches(remote)).toBe(2);
+  });
+
+  it('does not keep a failed fetch', async () => {
+    let fail = true;
+    const { client, remote } = make({
+      getDevices: async () => {
+        if (fail) throw new Error('boom');
+        return { devices: DEVICES };
+      },
+    }, { now: () => 5 });
+    await expect(client.listDevices()).rejects.toThrow(/boom/);
+    fail = false;
+    await expect(client.listDevices()).resolves.toHaveLength(DEVICES.length - 1);
+    expect(fetches(remote)).toBe(2);
   });
 });

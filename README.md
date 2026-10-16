@@ -14,7 +14,7 @@ You sign in to Amazon **in your own browser**; this server never sees your passw
 - **Hosted connector:** the sign-in page shows a **Sign in to Amazon** button and a box for that same address.
 - **Terminal:** `npx @chrischall/alexa-mcp login` prints the link and reads the pasted address (`--print` also writes the registration as one base64 line for `ALEXA_REGISTRATION`; treat it as a credential).
 
-Under the hood this is the Alexa iOS app's OAuth sign-in with PKCE. The link carries only a challenge, the matching secret stays on the server, and the code in the pasted address is single-use and expires in minutes. Finishing registers a virtual device named **alexa-mcp** on your account and saves the registration (refresh token plus session cookies) to `~/.alexa-mcp/registration.json` (mode 0600). After that no browser is needed: cookies are re-minted from the refresh token every few days. To revoke access, remove the **alexa-mcp** device from your Amazon account (Manage Your Content and Devices → Devices).
+Under the hood this is the Alexa iOS app's OAuth sign-in with PKCE. The link carries only a challenge, the matching secret stays on the server, and the code in the pasted address is single-use and expires in minutes. Finishing registers a virtual device named **alexa-mcp** on your account and saves the registration (refresh token plus session cookies) to `~/.alexa-mcp/registration.json` (mode 0600). After that no browser is needed: cookies are re-minted from the refresh token every few days. To revoke access, remove the **alexa-mcp** device from your Amazon account (Manage Your Content and Devices → Devices). A copy of the token is written to `registration-seed.json` while sign-in completes and deleted once `registration.json` is saved. Versions before this fix never deleted it, so if you are cleaning up an older install, delete `~/.alexa-mcp/registration-seed.json` too.
 
 ## Tools
 
@@ -67,7 +67,7 @@ Unlocking a door and opening a garage door are possible, but only through `alexa
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ALEXA_REGISTRATION` | — | Registration JSON, or the base64 line from `login --print`. Optional when the state file exists. |
+| `ALEXA_REGISTRATION` | — | Registration JSON, or the base64 line from `login --print`. Optional when the state file exists. If it is malformed but the state file is valid, the state file is used and a warning is logged. |
 | `ALEXA_STATE_DIR` | `~/.alexa-mcp` | Where `registration.json` and pending sign-ins live. |
 | `ALEXA_AMAZON_PAGE` | `amazon.com` | Amazon site of the account (or what the registration recorded). |
 | `ALEXA_ACCEPT_LANGUAGE` | `en-US` | Accept-Language sent to Amazon. |

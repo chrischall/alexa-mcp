@@ -399,6 +399,9 @@ describe('browser sign-in', () => {
     // The new sign-in is a NEW virtual device, so the fake list's old one is no longer hidden: all 4 count.
     expect(parseToolResult(finished)).toMatchObject({ ok: true, devices: DEVICES.length });
     expect(parseToolResult(await harness.callTool('alexa_session_status'))).toMatchObject({ configured: true, source: 'state-file' });
+    // registration.json is the one stored credential: the pre-completion seed copy is gone (fleet-audit#1205).
+    expect(existsSync(join(dir, 'registration.json'))).toBe(true);
+    expect(existsSync(join(dir, 'registration-seed.json'))).toBe(false);
     await harness.close();
   });
 
@@ -431,6 +434,14 @@ describe('confirm-gated writes', () => {
     const result = await harness.callTool('alexa_speak', { devices: ['Kitchen Echo'], text: 'something else', confirmToken });
     expect(text(result)).toContain('DRAFT_CHANGED');
     expect(writes('sendSequenceCommand')).toHaveLength(0);
+    await harness.close();
+  });
+
+  it('an announcement to several devices resolves them all from one device-list fetch (fleet-audit#1206)', async () => {
+    const { harness, remote } = await setup();
+    const before = remote.calls.filter((c) => c.method === 'getDevices').length;
+    await confirmed(harness, 'alexa_speak', { devices: ['G0001', 'G0002', 'Living Room TV'], text: 'hi', mode: 'announce' });
+    expect(remote.calls.filter((c) => c.method === 'getDevices').length - before).toBe(1);
     await harness.close();
   });
 

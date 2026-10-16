@@ -100,6 +100,9 @@ export interface ConfigDescription {
   stateFile: string;
 }
 
+/** How long one device-list fetch is reused (fleet-audit#1206). */
+export const DEVICE_LIST_TTL_MS = 5_000;
+
 export class AlexaClient {
   private readonly env: Env;
   private readonly factory: RemoteFactory;
@@ -111,6 +114,8 @@ export class AlexaClient {
   private configError: Error | null = null;
   private session: Promise<RemoteSession> | null = null;
   private persisting: Promise<void> = Promise.resolve();
+  /** The last device list, shared by the resolutions of one tool call (and its confirm). */
+  private devicesCache: { at: number; list: Promise<RawDevice[]> } | null = null;
 
   constructor(opts: AlexaClientOptions = {}) {
     this.env = opts.env ?? process.env;
@@ -222,6 +227,7 @@ export class AlexaClient {
   private dropSession(): void {
     const current = this.session;
     this.session = null;
+    this.devicesCache = null;
     current?.then((s) => s.stop()).catch(() => {});
   }
 
@@ -248,15 +254,40 @@ export class AlexaClient {
 
   // ---------------------------------------------------------------- devices
 
+  /**
+   * The account's devices (minus this server's own virtual device). One fetch
+   * is shared for {@link DEVICE_LIST_TTL_MS}, so resolving several names, or a
+   * preview followed by its confirmed call, does not re-fetch the whole list
+   * for each (fleet-audit#1206). A failed fetch is not cached.
+   */
   async listDevices(): Promise<RawDevice[]> {
-    const body = await this.call<{ devices?: RawDevice[] }>('getDevices');
-    const own = this.loaded?.registration.deviceSerial;
-    return (body.devices ?? []).filter((d) => d.serialNumber !== own);
+    const at = this.now();
+    const cached = this.devicesCache;
+    if (cached && at >= cached.at && at - cached.at < DEVICE_LIST_TTL_MS) return cached.list;
+    const list = this.call<{ devices?: RawDevice[] }>('getDevices').then((body) => {
+      const own = this.loaded?.registration.deviceSerial;
+      return (body.devices ?? []).filter((d) => d.serialNumber !== own);
+    });
+    const entry = { at, list };
+    this.devicesCache = entry;
+    list.catch(() => {
+      if (this.devicesCache === entry) this.devicesCache = null;
+    });
+    return list;
   }
 
   /** Find a device by serial number, exact name, or unique name substring (case-insensitive). */
   async resolveDevice(nameOrSerial: string): Promise<RawDevice> {
+    return AlexaClient.pickDevice(await this.listDevices(), nameOrSerial);
+  }
+
+  /** {@link resolveDevice} for several names, from one device list. */
+  async resolveDevices(namesOrSerials: readonly string[]): Promise<RawDevice[]> {
     const devices = await this.listDevices();
+    return namesOrSerials.map((name) => AlexaClient.pickDevice(devices, name));
+  }
+
+  private static pickDevice(devices: RawDevice[], nameOrSerial: string): RawDevice {
     const wanted = nameOrSerial.trim().toLowerCase();
     const bySerial = devices.find((d) => d.serialNumber.toLowerCase() === wanted);
     if (bySerial) return bySerial;

@@ -53,8 +53,10 @@ export function registerLoginTools(server: McpServer, client: AlexaClient): void
       }),
     },
     async ({ loginId, redirectUrl }) => {
-      const registration = await client.browserLogin().finish(loginId, redirectUrl);
+      const login = client.browserLogin();
+      const registration = await login.finish(loginId, redirectUrl);
       await client.adoptRegistration(registration);
+      await login.forgetSeed();
       const devices = await client.listDevices();
       return minifiedResult({ ok: true, amazonPage: registration.amazonPage, devices: devices.length });
     },

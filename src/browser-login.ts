@@ -22,7 +22,7 @@
 
 import crypto from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { McpToolError, writeFileSafe } from '@chrischall/mcp-utils';
 import type { Registration } from './registration.js';
@@ -226,5 +226,15 @@ export class BrowserLogin {
     await writeFileSafe(this.seedPath, new TextEncoder().encode(JSON.stringify(seed)), { overwrite: true, mode: 0o600 });
     const full = await this.opts.complete(seed);
     return { ...seed, ...full };
+  }
+
+  /**
+   * Delete the seed copy once the caller has saved the full registration
+   * (registration.json): it holds the same refresh token, and nothing reads it
+   * again, so keeping it would leave a working credential behind after a
+   * "sign out" that deletes registration.json (fleet-audit#1205).
+   */
+  async forgetSeed(): Promise<void> {
+    await rm(this.seedPath, { force: true });
   }
 }
