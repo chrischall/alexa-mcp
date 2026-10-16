@@ -59,6 +59,7 @@ export async function runLogin(argv: string[]): Promise<void> {
   rl.close();
   const registration = await login.finish(loginId, pasted);
   await client.adoptRegistration(registration);
+  await login.forgetSeed();
   const devices = await client.listDevices();
   console.error(`[alexa-mcp] Signed in — ${devices.length} devices found. Saved to ${client.describeConfig().stateFile} (mode 0600).`);
   if (opts.print) {

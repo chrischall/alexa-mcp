@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import crypto from 'node:crypto';
@@ -119,6 +119,16 @@ describe('BrowserLogin.finish', () => {
     const seed = JSON.parse(readFileSync(join(dir, 'registration-seed.json'), 'utf8'));
     expect(seed.refreshToken).toBe('Atnr|refresh');
     expect(statSync(join(dir, 'registration-seed.json')).mode & 0o777).toBe(0o600);
+  });
+
+  it('forgetSeed removes the seed copy once the registration is saved, and is a no-op when there is none', async () => {
+    const { login } = make();
+    const { loginId } = await login.begin();
+    await login.finish(loginId, pasted());
+    expect(existsSync(join(dir, 'registration-seed.json'))).toBe(true);
+    await login.forgetSeed();
+    expect(existsSync(join(dir, 'registration-seed.json'))).toBe(false);
+    await expect(login.forgetSeed()).resolves.toBeUndefined();
   });
 
   it('a login id is single-use', async () => {
