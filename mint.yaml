@@ -6,6 +6,12 @@ summary: >-
   lists and alarms through Amazon's Alexa web API. Each user signs in to Amazon
   in their own browser and pastes back the address they land on; every write
   is confirmation-gated.
+examples:
+  - prompt: What's on my Alexa shopping list?
+    note: Reads the list; completed items are left out unless you ask.
+  - prompt: Which alarms and reminders do I have set on my Echo devices this week?
+  - prompt: What temperature is the thermostat set to, and are any lights still on?
+    note: Reads live smart-home state; changes nothing.
 identity:
   perUserChild: true
 auth:
