@@ -89,6 +89,15 @@ describe('packaging', () => {
     expect(mint).toMatch(/dataDir:\s*true/);
   });
 
+  it('mint.yaml summary fits the catalog limit (200 chars) as one complete sentence set', () => {
+    const mint = readFileSync(join(ROOT, 'mint.yaml'), 'utf8');
+    const block = mint.match(/^summary: >-\n((?: {2}.*\n)+)/m);
+    expect(block, 'summary should be a folded >- block').not.toBeNull();
+    const summary = block![1].split('\n').map((l) => l.trim()).filter(Boolean).join(' ');
+    expect(summary.length).toBeLessThanOrEqual(200);
+    expect(summary).toMatch(/\.$/);
+  });
+
   it('mint.yaml egress covers the alarms API host as well as the web API', () => {
     const mint = readFileSync(join(ROOT, 'mint.yaml'), 'utf8');
     for (const host of ['alexa.amazon.com', 'na-api-alexa.amazon.com', 'api.amazon.com', 'www.amazon.com', 'api.amazonalexa.com']) {

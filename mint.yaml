@@ -3,9 +3,8 @@ name: Amazon Alexa
 slug: alexa
 summary: >-
   Echo devices, announcements, routines, smart-home control, shopping/to-do
-  lists and alarms through Amazon's Alexa web API. Each user signs in to Amazon
-  in their own browser and pastes back the address they land on; every write
-  is confirmation-gated.
+  lists and alarms via Alexa's web API. Sign in to Amazon in your own browser;
+  every write is confirmation-gated.
 examples:
   - prompt: What's on my Alexa shopping list?
     note: Reads the list; completed items are left out unless you ask.
