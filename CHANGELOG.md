@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.4](https://github.com/chrischall/alexa-mcp/compare/v0.3.3...v0.3.4) (2026-10-21)
+
+
+### Bug Fixes
+
+* **deps:** Bump the production-dependencies group with 2 updates ([#27](https://github.com/chrischall/alexa-mcp/issues/27)) ([0a56543](https://github.com/chrischall/alexa-mcp/commit/0a56543c7ddd02dee8c26215346ba8ae51fc6dc7))
+
+
+### Documentation
+
+* **mint:** add sample prompts for the public catalog ([#23](https://github.com/chrischall/alexa-mcp/issues/23)) ([6d4476b](https://github.com/chrischall/alexa-mcp/commit/6d4476b22e92151bc02c23fd6095eb43b1f8f3e1))
+* **mint:** fit the catalog summary within 200 characters ([#25](https://github.com/chrischall/alexa-mcp/issues/25)) ([5c78865](https://github.com/chrischall/alexa-mcp/commit/5c78865e99340527bc1a2fe230bb1b37e320c260))
+
 ## [0.3.3](https://github.com/chrischall/alexa-mcp/compare/v0.3.2...v0.3.3) (2026-10-16)
 
 
