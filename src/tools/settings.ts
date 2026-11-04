@@ -10,6 +10,7 @@ import {
 } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 import type { RawDevice } from '../remote.js';
 import { compactBluetooth } from '../views.js';
 import { WRITE_SUFFIX, deviceArg } from './common.js';
@@ -32,6 +33,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
     {
       description: 'Which Alexa devices have Do Not Disturb (DND, quiet mode) switched on right now.',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['do not disturb', 'quiet mode', 'dnd'] }),
       inputSchema: z.object({}),
     },
     async () => {
@@ -48,6 +50,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
     {
       description: 'Switch Do Not Disturb (DND, quiet mode) on or off for an Alexa device.' + WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
+      _meta: homeMeta('turn-on-off', { aliases: ['do not disturb', 'quiet mode', 'dnd'] }),
       inputSchema: z.object({
         device: deviceArg,
         enabled: z.boolean().describe('true turns Do Not Disturb on, false turns it off.'),
@@ -76,6 +79,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
     {
       description: 'Read an Echo speaker or soundbar’s equalizer: bass, mid(range) and treble, in dB.',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['equalizer', 'bass', 'treble'] }),
       inputSchema: z.object({ device: deviceArg }),
     },
     async ({ device }) => {
@@ -94,6 +98,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
         'keep their current value.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['equalizer', 'bass', 'treble'] }),
       inputSchema: z.object({
         device: deviceArg,
         bass: band.optional().describe('Bass, −6 to +6.'),
@@ -133,6 +138,7 @@ export function registerSettingsTools(server: McpServer, client: AlexaClient): v
         'whether the Echo is streaming over Bluetooth. ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['bluetooth', 'paired phone'] }),
       inputSchema: z.object({}),
     },
     async () => {

@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 import { LOGIN_HINT } from '../registration.js';
 
 export function registerSessionTools(server: McpServer, client: AlexaClient): void {
@@ -13,6 +14,7 @@ export function registerSessionTools(server: McpServer, client: AlexaClient): vo
         'Amazon site, and how old the session cookies are. Makes NO network call; alexa_healthcheck checks that ' +
         'Amazon still accepts the session.',
       annotations: toolAnnotations({ readOnly: true, openWorld: false }),
+      _meta: homeMeta('lookup'),
       inputSchema: z.object({}),
     },
     async () => {

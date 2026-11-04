@@ -11,6 +11,7 @@ import {
 } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 import {
   type CapabilityState,
   SMART_HOME_ACTIONS,
@@ -151,6 +152,7 @@ export function registerSmartHomeTools(server: McpServer, client: AlexaClient): 
         'alexa_control_smart_home. These are NOT in alexa_list_devices, which only lists Echo speakers, Echo Shows ' +
         'and Fire TVs. Optionally filter by kind (e.g. THERMOSTAT, LIGHT, SMARTPLUG, SMARTLOCK, GARAGE_DOOR).',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['smart home', 'lights', 'plugs', 'scenes'] }),
       inputSchema: z.object({
         kind: z.string().optional().describe('Only entities of this kind, e.g. LIGHT, THERMOSTAT, SCENE_TRIGGER (case-insensitive).'),
         view: viewParam(VIEWS),
@@ -178,6 +180,7 @@ export function registerSmartHomeTools(server: McpServer, client: AlexaClient): 
       // Every action here has an inverse in this set (on/off, brightness, colour). Security-reducing actions
       // (unlock, open a garage door) live on their own destructive tools, alexa_lock and alexa_garage_door.
       annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
+      _meta: homeMeta('turn-on-off', { aliases: ['lights', 'lamp', 'plug', 'switch', 'fan', 'scene', 'brightness', 'light colour'] }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Device, group or scene name (or id) from alexa_list_smart_home.'),
         action: z.enum(SMART_HOME_ACTIONS).describe('What to do.'),
@@ -248,6 +251,7 @@ export function registerSmartHomeTools(server: McpServer, client: AlexaClient): 
         'reachable. Name the devices, or pass a kind (e.g. THERMOSTAT, LIGHT) to read every one of that kind. An ' +
         'unreachable device is reported on its row, not as a failure.',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['thermostat', 'temperature', 'lights', 'sensors', 'is the door locked'] }),
       inputSchema: z.object({
         targets: z
           .array(z.string().min(1))
@@ -294,6 +298,7 @@ export function registerSmartHomeTools(server: McpServer, client: AlexaClient): 
         'refuses a setpoint outside its allowed range. Units default to the thermostat’s own scale.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['thermostat', 'heat', 'air conditioning', 'ac', 'temperature'] }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Thermostat name (or id) from alexa_list_smart_home.'),
         temperature: z.number().min(-50).max(120).optional().describe('Single setpoint for HEAT or COOL mode.'),

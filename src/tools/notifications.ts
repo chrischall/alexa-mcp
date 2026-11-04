@@ -5,11 +5,13 @@ import {
   confirmTokenParam,
   confirmWrite,
   minifiedResult,
+  rawTextResult,
   toolAnnotations,
   untrustedResult,
 } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 import type { RawDevice } from '../remote.js';
 import { compactNotification } from '../views.js';
 import { WRITE_SUFFIX, deviceArg } from './common.js';
@@ -62,27 +64,82 @@ function requireCapability(dev: RawDevice, capability: 'REMINDERS' | 'TIMERS_AND
   }
 }
 
+/** A calendar date, or an ISO date-time whose date part is used. */
+const dateArg = z.string().regex(/^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:?\d{2})?)?$/, 'YYYY-MM-DD or an ISO 8601 date-time');
+
+const BRIEF_MAX = 120;
+
+type Listed = ReturnType<typeof compactNotification>;
+
+/**
+ * One alarm, timer or reminder as one line — `title — <ISO date | no date> —
+ * <status>`, at most 120 characters (the title is shortened). The title is the
+ * kind, its label and the device it is on; the date is the next occurrence's
+ * wall-clock date and time; the status is on/off, and "repeats" when recurring.
+ */
+export function briefLine(n: Listed): string {
+  const kind = n.type ?? 'Notification';
+  const title = `${n.label ? `${kind}: ${n.label}` : kind}${n.device ? ` on ${n.device}` : ''}`;
+  const when = n.date ? (n.time ? `${n.date}T${n.time}` : n.date) : 'no date';
+  const status = `${n.on ? 'on' : 'off'}${n.recurring ? ', repeats' : ''}`;
+  const tail = ` — ${when} — ${status}`;
+  const room = BRIEF_MAX - tail.length;
+  const shown = title.length > room ? `${title.slice(0, Math.max(room - 1, 0))}…` : title;
+  return `${shown}${tail}`;
+}
+
+/**
+ * Whether an item falls in the [from, to] date window (inclusive, YYYY-MM-DD).
+ * Alexa keeps a repeating item's date at its FIRST scheduled day, so a
+ * repeating item counts as in the window when it was first set on or before
+ * `to` — it may still skip some days in the window (a weekdays-only alarm on a
+ * Saturday). A one-off item must fall inside the window. Undated items never do.
+ */
+function inWindow(n: Listed, from?: string, to?: string): boolean {
+  if (!from && !to) return true;
+  if (n.date === null) return false;
+  if (to && n.date > to) return false;
+  return Boolean(n.recurring) || !from || n.date >= from;
+}
+
 export function registerNotificationTools(server: McpServer, client: AlexaClient): void {
   server.registerTool(
     'alexa_list_alarms_reminders',
     {
       description:
         'List the alarms, timers and reminders set on the account’s Alexa devices, with id, label, device, ' +
-        'date/time, whether each is on, and its recurrence. Optionally filter by type. ' +
+        'date/time, whether each is on, and its recurrence. Optionally filter by type, or to a date window ' +
+        '(startDate/endDate); a repeating item is kept when it was first set on or before endDate. ' +
+        'view "brief" answers one line per item. ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('whats-on', {
+        canonical: true,
+        when: { start: 'startDate', end: 'endDate' },
+        aliases: ['alarms', 'reminders', 'timers', 'alarm clock', 'wake up'],
+      }),
       inputSchema: z.object({
         type: z.enum(['Alarm', 'Timer', 'Reminder']).optional().describe('Only this kind.'),
         includeOff: z.boolean().default(false).describe('Also return alarms/reminders that are switched off.'),
+        startDate: dateArg.optional().describe('Only items on or after this date (YYYY-MM-DD, or an ISO date-time); repeating items that started earlier are kept. Undated items are left out.'),
+        endDate: dateArg.optional().describe('Only items on or before this date (YYYY-MM-DD, or an ISO date-time). Undated items are left out.'),
+        view: z
+          .enum(['full', 'brief'])
+          .default('full')
+          .describe('"full" (default): one record per item. "brief": one text line per item — title — <ISO date or "no date"> — <on|off>, plus ", repeats" when recurring.'),
       }),
     },
-    async ({ type, includeOff }) => {
+    async ({ type, includeOff, startDate, endDate, view }) => {
       const [{ notifications = [] }, devices] = await Promise.all([client.listNotifications(), client.listDevices()]);
       const names = new Map(devices.map((d) => [d.serialNumber, d.accountName]));
+      const from = startDate?.slice(0, 10);
+      const to = endDate?.slice(0, 10);
       const rows = notifications
         .map(compactNotification)
         .filter((n) => (!type || n.type === type) && (includeOff || n.on))
+        .filter((n) => inWindow(n, from, to))
         .map((n) => ({ ...n, device: (n.device && names.get(n.device)) ?? n.device }));
+      if (view === 'brief') return rawTextResult(rows.length ? rows.map(briefLine).join('\n') : 'No alarms, timers or reminders.');
       return untrustedResult(rows);
     },
   );
@@ -96,6 +153,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
         'The time is applied in the device’s own time zone. Use alexa_create_timer for a countdown timer.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['remind me', 'reminder', 'alarm', 'wake me up'] }),
       inputSchema: z.object({
         device: deviceArg,
         type: z.enum(['Reminder', 'Alarm']).default('Reminder').describe('"Reminder" (default) or "Alarm".'),
@@ -149,6 +207,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
     {
       description: 'Start an Alexa countdown timer on an Echo device, e.g. a 10-minute pasta timer.' + WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['timer', 'countdown'] }),
       inputSchema: z.object({
         device: deviceArg,
         minutes: z.number().min(0.5).max(1440).describe('Duration in minutes (0.5–1440).'),
@@ -194,6 +253,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
         'just its next occurrence.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['cancel alarm', 'cancel reminder', 'cancel timer'] }),
       inputSchema: z.object({
         id: z.string().min(1).optional().describe('Notification id from alexa_list_alarms_reminders.'),
         label: z.string().min(1).optional().describe('Or: the reminder/timer label (case-insensitive).'),

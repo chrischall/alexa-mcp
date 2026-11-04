@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { McpToolError, confirmTokenParam, confirmWrite, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient, ValuelessSequenceCommand } from '../client.js';
+import { homeMeta } from './hints.js';
 import { WRITE_SUFFIX, defaultDevice, deviceArg } from './common.js';
 
 /**
@@ -42,6 +43,7 @@ export function registerActionTools(server: McpServer, client: AlexaClient): voi
         'tomorrow’s / the next calendar event, or "cleanup" (tidy-up music). Everyone in the room hears it.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('other', { aliases: ['weather', 'traffic', 'news', 'flash briefing', 'joke', 'fun fact', 'story'] }),
       inputSchema: z.object({
         device: deviceArg,
         command: z.enum(BUILTINS).describe('Which built-in feature.'),
@@ -73,6 +75,7 @@ export function registerActionTools(server: McpServer, client: AlexaClient): voi
         'screen.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('turn-on-off', { aliases: ['tv', 'fire tv', 'television'] }),
       inputSchema: z.object({
         device: deviceArg,
         command: z.enum(['turnOn', 'turnOff', 'pause', 'resume', 'home']).describe('What to do.'),
@@ -107,6 +110,7 @@ export function registerActionTools(server: McpServer, client: AlexaClient): voi
         'stop". Pass a device, or allDevices to stop every device on the account.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('other', { aliases: ['stop', 'be quiet', 'stop the alarm'] }),
       inputSchema: z.object({
         device: deviceArg.optional(),
         allDevices: z.boolean().optional().describe('Stop every Alexa device on the account.'),

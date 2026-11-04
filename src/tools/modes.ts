@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { McpToolError, confirmTokenParam, confirmWrite, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 import { GARAGE_INSTANCE, isGarageDoor, modeInstances, parseCapabilityStates } from '../views.js';
 import { WRITE_SUFFIX } from './common.js';
 import { findEntity } from './smarthome.js';
@@ -89,6 +90,7 @@ export function registerModeTools(server: McpServer, client: AlexaClient): void 
         'accepts: a thermostat’s fan mode (On / Auto / Circulate), a robot vacuum’s (Roomba) state, a light’s ' +
         'effect, washer or air-purifier modes. Use the setting and value names with alexa_set_device_mode.',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['fan mode', 'vacuum', 'roomba'] }),
       inputSchema: z.object({ target: z.string().min(1).describe('Device name (or id) from alexa_list_smart_home.') }),
     },
     async ({ target }) => {
@@ -115,6 +117,7 @@ export function registerModeTools(server: McpServer, client: AlexaClient): void 
         'Garage doors are not changed here: use alexa_garage_door.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['fan mode', 'vacuum', 'roomba', 'light effect'] }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Device name (or id) from alexa_list_smart_home.'),
         mode: z.string().min(1).max(100).describe('The new value, by name ("Circulate") or value ("3").'),
@@ -170,6 +173,7 @@ export function registerModeTools(server: McpServer, client: AlexaClient): void 
         'anyone outside can walk in — so confirm the user really wants it open.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('turn-on-off', { aliases: ['garage', 'garage door'] }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Garage door name (or id) from alexa_list_smart_home.'),
         action: z.enum(['open', 'close']).describe('open or close.'),
@@ -224,6 +228,7 @@ export function registerModeTools(server: McpServer, client: AlexaClient): void 
         'its refusal is reported as an error.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('turn-on-off', { aliases: ['front door', 'door lock', 'lock', 'unlock'] }),
       inputSchema: z.object({
         target: z.string().min(1).describe('Lock name (or id) from alexa_list_smart_home.'),
         action: z.enum(['lock', 'unlock']).describe('lock or unlock.'),
