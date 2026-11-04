@@ -64,5 +64,10 @@
   },
   "allowScripts": {
     "esbuild@0.28.2": true
+  },
+  "overrides": {
+    "alexa-cookie2": {
+      "cookie": "^0.7.2"
+    }
   }
 }
