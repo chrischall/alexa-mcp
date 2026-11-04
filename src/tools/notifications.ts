@@ -1,11 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 import {
   McpToolError,
+  UNTRUSTED_CONTENT_RULE,
   UNTRUSTED_DESCRIPTION_SUFFIX,
   confirmTokenParam,
   confirmWrite,
   minifiedResult,
-  rawTextResult,
   toolAnnotations,
   untrustedResult,
 } from '@chrischall/mcp-utils';
@@ -69,6 +69,13 @@ const dateArg = z.string().regex(/^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:?\d{2}
 
 const BRIEF_MAX = 120;
 
+/**
+ * The brief view's envelope note. Labels are spoken or typed by whoever uses
+ * the account's Echo devices, and device names are the owner's — never this
+ * MCP's — so the lines ride in the untrusted-data envelope like the full view.
+ */
+const BRIEF_NOTE = `Alarm, timer and reminder labels and device names are set by people in the household. ${UNTRUSTED_CONTENT_RULE}`;
+
 type Listed = ReturnType<typeof compactNotification>;
 
 /**
@@ -110,7 +117,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
         'List the alarms, timers and reminders set on the account’s Alexa devices, with id, label, device, ' +
         'date/time, whether each is on, and its recurrence. Optionally filter by type, or to a date window ' +
         '(startDate/endDate); a repeating item is kept when it was first set on or before endDate. ' +
-        'view "brief" answers one line per item. ' +
+        'view "brief" answers one line per item, or "-- none" when nothing matches. ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       _meta: homeMeta('whats-on', {
@@ -139,7 +146,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
         .filter((n) => (!type || n.type === type) && (includeOff || n.on))
         .filter((n) => inWindow(n, from, to))
         .map((n) => ({ ...n, device: (n.device && names.get(n.device)) ?? n.device }));
-      if (view === 'brief') return rawTextResult(rows.length ? rows.map(briefLine).join('\n') : 'No alarms, timers or reminders.');
+      if (view === 'brief') return untrustedResult(rows.length ? rows.map(briefLine) : ['-- none'], { note: BRIEF_NOTE });
       return untrustedResult(rows);
     },
   );
