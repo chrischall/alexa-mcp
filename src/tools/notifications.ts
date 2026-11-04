@@ -88,6 +88,20 @@ export function briefLine(n: Listed): string {
   return `${shown}${tail}`;
 }
 
+/**
+ * Whether an item falls in the [from, to] date window (inclusive, YYYY-MM-DD).
+ * Alexa keeps a repeating item's date at its FIRST scheduled day, so a
+ * repeating item counts as in the window when it was first set on or before
+ * `to` — it may still skip some days in the window (a weekdays-only alarm on a
+ * Saturday). A one-off item must fall inside the window. Undated items never do.
+ */
+function inWindow(n: Listed, from?: string, to?: string): boolean {
+  if (!from && !to) return true;
+  if (n.date === null) return false;
+  if (to && n.date > to) return false;
+  return Boolean(n.recurring) || !from || n.date >= from;
+}
+
 export function registerNotificationTools(server: McpServer, client: AlexaClient): void {
   server.registerTool(
     'alexa_list_alarms_reminders',
@@ -95,7 +109,8 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
       description:
         'List the alarms, timers and reminders set on the account’s Alexa devices, with id, label, device, ' +
         'date/time, whether each is on, and its recurrence. Optionally filter by type, or to a date window ' +
-        '(startDate/endDate). view "brief" answers one line per item. ' +
+        '(startDate/endDate); a repeating item is kept when it was first set on or before endDate. ' +
+        'view "brief" answers one line per item. ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       _meta: homeMeta('whats-on', {
@@ -106,12 +121,12 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
       inputSchema: z.object({
         type: z.enum(['Alarm', 'Timer', 'Reminder']).optional().describe('Only this kind.'),
         includeOff: z.boolean().default(false).describe('Also return alarms/reminders that are switched off.'),
-        startDate: dateArg.optional().describe('Only items on or after this date (YYYY-MM-DD, or an ISO date-time). Undated items are left out.'),
+        startDate: dateArg.optional().describe('Only items on or after this date (YYYY-MM-DD, or an ISO date-time); repeating items that started earlier are kept. Undated items are left out.'),
         endDate: dateArg.optional().describe('Only items on or before this date (YYYY-MM-DD, or an ISO date-time). Undated items are left out.'),
         view: z
           .enum(['full', 'brief'])
           .default('full')
-          .describe('"full" (default): one record per item. "brief": one text line per item — title — <ISO date or "no date"> — <on|off>.'),
+          .describe('"full" (default): one record per item. "brief": one text line per item — title — <ISO date or "no date"> — <on|off>, plus ", repeats" when recurring.'),
       }),
     },
     async ({ type, includeOff, startDate, endDate, view }) => {
@@ -122,7 +137,7 @@ export function registerNotificationTools(server: McpServer, client: AlexaClient
       const rows = notifications
         .map(compactNotification)
         .filter((n) => (!type || n.type === type) && (includeOff || n.on))
-        .filter((n) => (!from && !to) || (n.date !== null && (!from || n.date >= from) && (!to || n.date <= to)))
+        .filter((n) => inWindow(n, from, to))
         .map((n) => ({ ...n, device: (n.device && names.get(n.device)) ?? n.device }));
       if (view === 'brief') return rawTextResult(rows.length ? rows.map(briefLine).join('\n') : 'No alarms, timers or reminders.');
       return untrustedResult(rows);

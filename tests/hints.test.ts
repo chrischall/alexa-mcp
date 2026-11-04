@@ -203,7 +203,7 @@ describe('alexa_list_alarms_reminders view: brief', () => {
     const h = await setup();
     const out = text(await h.callTool('alexa_list_alarms_reminders', { view: 'brief', type: 'Alarm' }));
     expect(out.split('\n')).toEqual(['Alarm on Kitchen Echo — 2026-10-08T06:30 — on, repeats']);
-    const none = text(await h.callTool('alexa_list_alarms_reminders', { view: 'brief', startDate: '2030-01-01' }));
+    const none = text(await h.callTool('alexa_list_alarms_reminders', { view: 'brief', type: 'Reminder', startDate: '2030-01-01' }));
     await h.close();
     expect(none).toBe('No alarms, timers or reminders.');
   });
@@ -213,12 +213,25 @@ describe('alexa_list_alarms_reminders view: brief', () => {
     const brief = text(
       await h.callTool('alexa_list_alarms_reminders', { view: 'brief', includeOff: true, startDate: '2026-10-09', endDate: '2026-10-10T23:59:00-04:00' }),
     ).split('\n');
-    expect(brief.map((l) => l.split(' — ')[1])).toEqual(['2026-10-09T09:00', '2026-10-10T07:00']);
+    expect(brief.map((l) => l.split(' — ')[1])).toEqual(['2026-10-08T06:30', '2026-10-09T09:00', '2026-10-10T07:00']);
     const full = text(await h.callTool('alexa_list_alarms_reminders', { startDate: '2026-10-11' }));
     await h.close();
     expect(full).toContain('n-long');
     expect(full).not.toContain('n-rem');
     expect(full).not.toContain('n-undated');
+  });
+
+  it('keeps a repeating alarm in any window after it was first set, and not one before', async () => {
+    const h = await setup();
+    const later = text(
+      await h.callTool('alexa_list_alarms_reminders', { view: 'brief', type: 'Alarm', startDate: '2026-11-05', endDate: '2026-11-05' }),
+    );
+    const open = text(await h.callTool('alexa_list_alarms_reminders', { type: 'Alarm', startDate: '2027-03-01' }));
+    const before = text(await h.callTool('alexa_list_alarms_reminders', { type: 'Alarm', endDate: '2026-10-07' }));
+    await h.close();
+    expect(later).toBe('Alarm on Kitchen Echo — 2026-10-08T06:30 — on, repeats');
+    expect(open).toContain('n-alarm');
+    expect(before).not.toContain('n-alarm');
   });
 
   it('refuses a date it cannot read', async () => {
