@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { McpToolError, confirmTokenParam, confirmWrite, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 import { WRITE_SUFFIX, deviceArg } from './common.js';
 
 /** Alexa truncates or rejects long TTS; this is the documented sequence-command ceiling. */
@@ -17,6 +18,7 @@ export function registerSpeechTools(server: McpServer, client: AlexaClient): voi
         'room hears it, so it cannot be taken back.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('send', { aliases: ['announce', 'announcement', 'intercom', 'say', 'tell everyone'] }),
       inputSchema: z.object({
         devices: z
           .array(deviceArg)

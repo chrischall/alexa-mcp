@@ -11,6 +11,7 @@ import {
 } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 import { compactRoutine } from '../views.js';
 import { WRITE_SUFFIX, defaultDevice } from './common.js';
 
@@ -41,6 +42,7 @@ export function registerRoutineTools(server: McpServer, client: AlexaClient): vo
         'List the Alexa routines on the account — name (or trigger phrase), id, whether enabled, and what triggers ' +
         'each (voice phrase, schedule, device event).',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['routines'] }),
       inputSchema: z.object({ view: viewParam(VIEWS) }),
     },
     async ({ view }) => {
@@ -58,6 +60,7 @@ export function registerRoutineTools(server: McpServer, client: AlexaClient): vo
         'lights, locks, messages, purchases — so check what it does before running it.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('other', { aliases: ['routine', 'good night', 'good morning'] }),
       inputSchema: z.object({
         routine: z.string().min(1).describe('Routine name, trigger phrase or id (from alexa_list_routines).'),
         device: z

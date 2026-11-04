@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 
 /**
  * Sign-in tools. Not confirm-gated, deliberately: `begin` changes nothing
@@ -21,6 +22,7 @@ export function registerLoginTools(server: McpServer, client: AlexaClient): void
         'paste that page’s full address, then call alexa_finish_login with it and the loginId. The password never ' +
         'passes through this server. The link works for 15 minutes.',
       annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: false }),
+      _meta: homeMeta('other'),
       inputSchema: z.object({}),
     },
     async () => {
@@ -43,6 +45,7 @@ export function registerLoginTools(server: McpServer, client: AlexaClient): void
         'server as an "alexa-mcp" device on the Amazon account, saves the session, and checks it by reading the ' +
         'device list. Each sign-in link can be finished once; if it fails, start again with alexa_begin_login.',
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('other'),
       inputSchema: z.object({
         loginId: z.string().regex(/^[0-9a-f]{16,64}$/).describe('The loginId alexa_begin_login returned.'),
         redirectUrl: z

@@ -10,6 +10,7 @@ import {
 } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 import { compactList, compactListItem } from '../views.js';
 import { WRITE_SUFFIX } from './common.js';
 
@@ -54,6 +55,7 @@ export function registerListTools(server: McpServer, client: AlexaClient): void 
     {
       description: 'List the Alexa shopping and to-do lists on the account, with how many active items each has.',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['lists'] }),
       inputSchema: z.object({}),
     },
     async () => minifiedResult((await client.listLists()).map(compactList)),
@@ -66,6 +68,7 @@ export function registerListTools(server: McpServer, client: AlexaClient): void 
         'Read the items on an Alexa shopping or to-do list. Completed items are omitted unless includeCompleted is set. ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['shopping list', 'grocery list', 'groceries', 'to-do list', 'todo'] }),
       inputSchema: z.object({
         list: listArg,
         includeCompleted: z.boolean().default(false).describe('Also return checked-off items.'),
@@ -83,6 +86,7 @@ export function registerListTools(server: McpServer, client: AlexaClient): void 
     {
       description: 'Add an item to an Alexa shopping or to-do list.' + WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['shopping list', 'grocery list', 'add to list', 'to-do list'] }),
       inputSchema: z.object({
         list: listArg,
         item: z.string().min(1).max(256).describe('The item text, e.g. "oat milk".'),
@@ -114,6 +118,7 @@ export function registerListTools(server: McpServer, client: AlexaClient): void 
         'its name or item id from alexa_get_list_items.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['check off', 'shopping list', 'to-do list'] }),
       inputSchema: z.object({
         list: listArg,
         item: z.string().min(1).describe('Item text (exact, case-insensitive) or item id.'),
@@ -148,6 +153,7 @@ export function registerListTools(server: McpServer, client: AlexaClient): void 
         'This deletes it outright — any quantity or note on it is lost.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: true, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['shopping list', 'to-do list', 'take off the list'] }),
       inputSchema: z.object({
         list: listArg,
         item: z.string().min(1).describe('Item text (exact, case-insensitive) or item id.'),

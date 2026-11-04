@@ -10,6 +10,7 @@ import {
 } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient, PlaybackCommand } from '../client.js';
+import { homeMeta } from './hints.js';
 import { compactDevice, compactVolume } from '../views.js';
 import { WRITE_SUFFIX, deviceArg } from './common.js';
 
@@ -24,6 +25,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
         'device family and whether each is online. Use the name or serial with the other alexa_ tools. Thermostats, ' +
         'lights, plugs, switches, locks and other smart-home devices are NOT here: use alexa_list_smart_home for those.',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['echo', 'speakers', 'alexa devices'] }),
       inputSchema: z.object({ view: viewParam(VIEWS) }),
     },
     async ({ view }) => {
@@ -38,6 +40,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
     {
       description: 'What is playing on an Alexa device right now — media state, title, artist and provider, from its player.',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['music', 'song', 'what is playing'] }),
       inputSchema: z.object({ device: deviceArg }),
     },
     async ({ device }) => {
@@ -66,6 +69,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
     {
       description: 'Current speaker volume (0–100) and mute state of every Alexa device that reports one.',
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
+      _meta: homeMeta('lookup', { aliases: ['volume'] }),
       inputSchema: z.object({}),
     },
     async () => {
@@ -82,6 +86,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
     {
       description: 'Set the speaker volume (0–100) of an Alexa device.' + WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, idempotent: true, openWorld: true }),
+      _meta: homeMeta('change', { aliases: ['volume', 'louder', 'quieter', 'turn it up', 'turn it down', 'mute'] }),
       inputSchema: z.object({
         device: deviceArg,
         volume: z.number().int().min(0).max(100).describe('Volume level, 0–100.'),
@@ -110,6 +115,7 @@ export function registerDeviceTools(server: McpServer, client: AlexaClient): voi
     {
       description: 'Play, pause, skip to next or go back to previous on an Alexa device’s current media.' + WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
+      _meta: homeMeta('other', { aliases: ['music', 'play', 'pause', 'resume', 'next song', 'skip'] }),
       inputSchema: z.object({
         device: deviceArg,
         command: z.enum(['play', 'pause', 'next', 'previous']).describe('The media command.'),

@@ -4,6 +4,7 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { McpToolError, confirmTokenParam, confirmWrite, minifiedResult, toolAnnotations, writeFileSafe } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { AlexaClient } from '../client.js';
+import { homeMeta } from './hints.js';
 import { compactSmartHomeEntity } from '../views.js';
 import { WRITE_SUFFIX } from './common.js';
 import {
@@ -91,6 +92,7 @@ export function registerVacationTools(server: McpServer, client: AlexaClient): v
         'thermostat. Turning it on twice is refused so the saved settings are never lost.' +
         WRITE_SUFFIX,
       annotations: toolAnnotations({ readOnly: false, destructive: false, openWorld: true }),
+      _meta: homeMeta('turn-on-off', { aliases: ['vacation mode', 'away mode', 'going away'] }),
       inputSchema: z.object({
         enabled: z.boolean().describe('true turns vacation mode on; false restores the saved settings.'),
         targets: z.array(z.string().min(1)).min(1).max(20).optional().describe('Thermostat names (or ids). Default: all thermostats.'),

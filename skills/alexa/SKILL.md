@@ -52,6 +52,15 @@ Every tool that changes something returns a preview and a `confirmToken` on the 
 - `alexa_run_routine` does whatever the routine was built to do. Say what it does if you know.
 - There is no tool for free-text "Alexa, …" commands, deliberately: they can buy things and unlock doors.
 
+## In context groups
+
+On an mcp-host gateway this server is in the **home** group (`_meta.mint` on every tool but the healthcheck).
+
+- Canonical read: `alexa_list_alarms_reminders` answers **what's on** (alarms, timers, reminders), with `startDate`/`endDate` as the window and `view: "brief"` for one line per item (`title — <ISO date | no date> — on|off`). It takes no subject: Echo devices and lists are what a command runs on, not who the question is about.
+- Nothing here answers what's new or what's due. Everything else is a lookup (devices, smart-home state, lists) or a write (`turn-on-off` for lights, plugs, locks, the garage door, DND, Fire TV and vacation mode; `change` for setpoints, volume, lists and reminders; `send` for `alexa_speak`).
+- A compound ask fans out across the group: "what alarms are set for tomorrow, and is the pool heater on?" reads this server's brief list beside the other home members.
+- This server is not browser-bridged: it needs a working Alexa sign-in, not an open browser. Without one the group reports Alexa could not answer, and `alexa_begin_login` fixes it.
+
 ## When it isn't working
 
 1. `alexa_session_status` (no network): is a registration configured, and how old are the cookies?
