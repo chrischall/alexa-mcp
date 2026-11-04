@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/chrischall/alexa-mcp/compare/v0.3.4...v0.4.0) (2026-11-04)
+
+
+### Features
+
+* context-group hints, a brief view and date window on the alarm list ([#37](https://github.com/chrischall/alexa-mcp/issues/37)) ([2ceeb7d](https://github.com/chrischall/alexa-mcp/commit/2ceeb7da10a513fa0cb0ef6801c655add33b0661))
+
+
+### Bug Fixes
+
+* **deps:** Bump @chrischall/mcp-utils from 3.3.1 to 3.4.0 in the production-dependencies group ([#32](https://github.com/chrischall/alexa-mcp/issues/32)) ([c1d2300](https://github.com/chrischall/alexa-mcp/commit/c1d2300fa3c5682b4d88a37522171c03dccc9438))
+* **deps:** bump follow-redirects to 1.16.2 (GHSA-mrwp-f3q8-3g9p) ([#35](https://github.com/chrischall/alexa-mcp/issues/35)) ([80d9edb](https://github.com/chrischall/alexa-mcp/commit/80d9edb6ded4ceeb154a7c4da033b47570edf45d))
+* **deps:** force patched cookie under alexa-cookie2 ([#34](https://github.com/chrischall/alexa-mcp/issues/34)) ([b9871a3](https://github.com/chrischall/alexa-mcp/commit/b9871a3dd8dfbdc560547959d18b93df8d884698))
+
 ## [0.3.4](https://github.com/chrischall/alexa-mcp/compare/v0.3.3...v0.3.4) (2026-10-28)
 
 
