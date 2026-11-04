@@ -710,11 +710,13 @@ describe('Do Not Disturb and equalizer', () => {
 });
 
 describe('reminders, alarms and timers', () => {
-  const future = () => {
-    // Tomorrow 09:00 at a fixed -04:00 offset (New York daylight time in October).
-    const d = new Date(Date.now() + 2 * 86_400_000);
-    return `${d.toISOString().slice(0, 10)}T09:00:00-04:00`;
-  };
+  // Fixed far-future dates, never "now + N days": the offset must match the
+  // device zone's (America/New_York) offset ON THAT DATE, and a relative date
+  // silently crosses a DST boundary twice a year. A rolling date with a
+  // hard-coded -04:00 broke CI the week DST ended (2026-11-01).
+  const SUMMER = '2099-07-15T09:00:00-04:00'; // EDT
+  const WINTER = '2099-01-15T09:00:00-05:00'; // EST
+  const future = () => SUMMER;
 
   it('alexa_create_reminder: phase 1 builds nothing; phase 2 creates it at the wall-clock time in the device zone', async () => {
     const { harness, remote, writes } = await setup();
@@ -730,11 +732,21 @@ describe('reminders, alarms and timers', () => {
     await harness.close();
   });
 
-  it('an alarm (new-style object) gets its scheduledTime in the device zone', async () => {
+  it.each([
+    ['summer (EDT)', SUMMER],
+    ['winter (EST)', WINTER],
+  ])('an alarm (new-style object) gets its scheduledTime in the device zone — %s', async (_season, at) => {
     const { harness, writes } = await setup();
-    const at = future();
     await confirmed(harness, 'alexa_create_reminder', { device: 'kitchen', type: 'Alarm', at });
     expect((writes('createNotification')[0].args[0] as { trigger: { scheduledTime: string } }).trigger.scheduledTime).toBe(`${at.slice(0, 10)}T09:00:00`);
+    await harness.close();
+  });
+
+  it('a winter reminder keeps its 09:00 wall-clock time in the device zone', async () => {
+    const { harness, writes } = await setup();
+    await confirmed(harness, 'alexa_create_reminder', { device: 'kitchen', label: 'call mom', at: WINTER });
+    const created = writes('createNotification')[0].args[0] as Record<string, unknown>;
+    expect(created).toMatchObject({ originalDate: '2099-01-15', originalTime: '09:00:00.000', alarmTime: Date.parse(WINTER) });
     await harness.close();
   });
 
