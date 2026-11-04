@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/chrischall/alexa-mcp/compare/v0.4.0...v0.4.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **brief:** align the brief view with the fleet contract ([#38](https://github.com/chrischall/alexa-mcp/issues/38)) ([7eb3fb7](https://github.com/chrischall/alexa-mcp/commit/7eb3fb7b4e9464782270158419485e9645b61586))
+
 ## [0.4.0](https://github.com/chrischall/alexa-mcp/compare/v0.3.4...v0.4.0) (2026-11-04)
 
 
