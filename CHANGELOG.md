@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/chrischall/alexa-mcp/compare/v0.4.1...v0.4.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* **deps:** Bump @chrischall/mcp-utils from 3.4.0 to 3.7.2 in the production-dependencies group ([#41](https://github.com/chrischall/alexa-mcp/issues/41)) ([60af97b](https://github.com/chrischall/alexa-mcp/commit/60af97b0bda77c0cd27dc5ee07da605cac29431f))
+
 ## [0.4.1](https://github.com/chrischall/alexa-mcp/compare/v0.4.0...v0.4.1) (2026-11-04)
 
 
